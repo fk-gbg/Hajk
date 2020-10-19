@@ -20,7 +20,7 @@ import { validateMessageParameters } from "./utils/MessageValidator.js";
 import {
   getSketchStyle,
   getHighlightStyle,
-  getHiddenStyle,
+  getHiddenStyle
 } from "./utils/FeatureStyle.js";
 
 class MarkisConnectionModel {
@@ -50,7 +50,7 @@ class MarkisConnectionModel {
     this.vectorSource = new VectorSource({});
     this.searchResultLayer = new VectorLayer({
       source: new VectorSource({}),
-      style: getSketchStyle,
+      style: getSketchStyle
     });
     this.map.addLayer(this.searchResultLayer);
     this.searchResultLayer.set("type", "markisResultLayer");
@@ -59,12 +59,12 @@ class MarkisConnectionModel {
 
   setEditLayer(layerName) {
     this.editSource = this.wfstSources.find(
-      (wfstSource) => wfstSource.layers[0] === layerName
+      wfstSource => wfstSource.layers[0] === layerName
     );
     this.promptForAttributes = this.editSource.editableFields.length > 0;
     this.editLayer = new Vector({
       source: this.vectorSource,
-      style: getSketchStyle,
+      style: getSketchStyle
     });
 
     if (this.editLayer) {
@@ -77,7 +77,7 @@ class MarkisConnectionModel {
     var foundLayer = this.map
       .getLayers()
       .getArray()
-      .find((layer) => {
+      .find(layer => {
         var match = false;
         if (layer.getSource().getParams) {
           let params = layer.getSource().getParams();
@@ -100,7 +100,7 @@ class MarkisConnectionModel {
   }
 
   toggleLayerVisibility(layerNames, visible) {
-    layerNames.forEach((layerName) => {
+    layerNames.forEach(layerName => {
       const foundLayer = this.getLayer(layerName);
       if (foundLayer) {
         foundLayer.setProperties({ visible: visible });
@@ -129,7 +129,7 @@ class MarkisConnectionModel {
   }
 
   /**Lets the user select existing features for editing. Only handles single select and is restricted to polygon*/
-  onSelectFeatures = (evt) => {
+  onSelectFeatures = evt => {
     if (this.promptForAttributes && this.editFeatureId) {
       this.publishMessage(
         "Du måste ange attribut på ytan innan du kan skapa en ny!",
@@ -137,7 +137,7 @@ class MarkisConnectionModel {
         false
       );
     } else {
-      handleClick(evt, evt.map, (response) => {
+      handleClick(evt, evt.map, response => {
         if (response.features.length === 1) {
           const estateFeature = response.features[0];
           const geometryType = estateFeature.getGeometry().getType();
@@ -159,18 +159,18 @@ class MarkisConnectionModel {
   };
 
   setFeatureProperties() {
-    this.vectorSource.forEachFeature((feature) => {
+    this.vectorSource.forEachFeature(feature => {
       feature.setGeometryName(this.geometryName);
       feature.unset("bbox", true);
       if (this.editSource.setProperties) {
-        this.editSource.setProperties.forEach((property) => {
+        this.editSource.setProperties.forEach(property => {
           if (property.fromMarkis) {
             feature.setProperties({
-              [property.columnName]: this.markisParameters[property.value],
+              [property.columnName]: this.markisParameters[property.value]
             });
           } else {
             feature.setProperties({
-              [property.columnName]: [property.value],
+              [property.columnName]: [property.value]
             });
           }
         });
@@ -189,10 +189,10 @@ class MarkisConnectionModel {
       source: this.vectorSource,
       type: this.type,
       style: getSketchStyle(),
-      geometryName: this.geometryName,
+      geometryName: this.geometryName
     });
 
-    this.draw.on("drawend", (event) => {
+    this.draw.on("drawend", event => {
       this.handleDrawEnd(event);
     });
 
@@ -200,14 +200,14 @@ class MarkisConnectionModel {
     this.map.snapHelper.add("markisconnection");
   }
 
-  handleDrawEnd = (event) => {
+  handleDrawEnd = event => {
     if (this.promptForAttributes && this.editFeatureId) {
       this.publishMessage(
         "Du måste ange attribut på ytan innan du kan skapa en ny!",
         "error",
         false
       );
-      this.vectorSource.once("addfeature", (event) => {
+      this.vectorSource.once("addfeature", event => {
         const feature = event.feature;
         this.vectorSource.removeFeature(feature);
       });
@@ -240,11 +240,12 @@ class MarkisConnectionModel {
     this.map.un("singleclick", this.removeSelected);
     this.map.un("singleclick", this.onSelectFeatures);
     this.map.un("singleclick", this.selectForEdit);
+    this.map.clickLock.delete("markisconnection");
   }
 
-  removeSelected = (e) => {
-    this.map.forEachFeatureAtPixel(e.pixel, (feature) => {
-      if (this.vectorSource.getFeatures().some((f) => f === feature)) {
+  removeSelected = e => {
+    this.map.forEachFeatureAtPixel(e.pixel, feature => {
+      if (this.vectorSource.getFeatures().some(f => f === feature)) {
         if (
           feature.modification === "added" ||
           feature.modification === undefined
@@ -258,8 +259,7 @@ class MarkisConnectionModel {
           this.vectorSource
             .getFeatures()
             .filter(
-              (feature) =>
-                ["added", "updated"].indexOf(feature.modification) > -1
+              feature => ["added", "updated"].indexOf(feature.modification) > -1
             ).length > 0;
         this.featureModified = true;
         this.localObserver.publish("feature-deleted-by-user");
@@ -268,16 +268,16 @@ class MarkisConnectionModel {
   };
 
   removeHighlight() {
-    this.vectorSource.getFeatures().forEach((feature) => {
+    this.vectorSource.getFeatures().forEach(feature => {
       if (feature.modification && feature.modification !== "removed") {
         feature.setStyle(getSketchStyle);
       }
     });
   }
 
-  selectForEdit = (e) => {
-    this.map.forEachFeatureAtPixel(e.pixel, (feature) => {
-      if (this.vectorSource.getFeatures().some((f) => f === feature)) {
+  selectForEdit = e => {
+    this.map.forEachFeatureAtPixel(e.pixel, feature => {
+      if (this.vectorSource.getFeatures().some(f => f === feature)) {
         this.removeHighlight();
         this.editFeatureId = feature.getId();
         feature.setStyle(getHighlightStyle);
@@ -288,14 +288,14 @@ class MarkisConnectionModel {
 
   setEditActive() {
     let features = new Collection();
-    this.vectorSource.getFeatures().forEach((feature) => {
+    this.vectorSource.getFeatures().forEach(feature => {
       features.push(feature);
     });
     this.edit = new Modify({ features: features });
     this.map.addInteraction(this.edit);
     this.map.snapHelper.add("markisconnection");
 
-    this.edit.on("modifyend", (event) => {
+    this.edit.on("modifyend", event => {
       this.featureModified = true;
       this.localObserver.publish("feature-modified");
     });
@@ -359,7 +359,7 @@ class MarkisConnectionModel {
         featureType: ft,
         hasZ: false,
         version: "1.1.0", // or "1.0.0"
-        srsName: this.editSource.projection,
+        srsName: this.editSource.projection
       };
     return format.writeTransaction(
       features.inserts,
@@ -391,16 +391,16 @@ class MarkisConnectionModel {
         body: payload,
         credentials: "same-origin",
         headers: {
-          "Content-Type": "text/xml",
-        },
+          "Content-Type": "text/xml"
+        }
       })
-        .then((response) => {
-          response.text().then((wfsResponseText) => {
+        .then(response => {
+          response.text().then(wfsResponseText => {
             done(this.parseWFSTresponse(wfsResponseText));
           });
         })
-        .catch((response) => {
-          response.text().then((errorMessage) => {
+        .catch(response => {
+          response.text().then(errorMessage => {
             done(errorMessage);
           });
         });
@@ -411,7 +411,7 @@ class MarkisConnectionModel {
    */
   updateFeatureIds(features) {
     if (features.inserts.length > 0) {
-      features.inserts.forEach((feature) => {
+      features.inserts.forEach(feature => {
         feature.setId(undefined);
         if (feature.getProperties().id) {
           feature.unset("id", true);
@@ -419,12 +419,12 @@ class MarkisConnectionModel {
       });
     }
     if (features.deletes.length > 0) {
-      features.deletes.forEach((feature) => {
+      features.deletes.forEach(feature => {
         feature.setId(feature.getProperties().id);
       });
     }
     if (features.updates.length > 0) {
-      features.updates.forEach((feature) => {
+      features.updates.forEach(feature => {
         feature.setId(feature.getProperties().id);
       });
     }
@@ -433,15 +433,15 @@ class MarkisConnectionModel {
   save(done) {
     this.setFeatureProperties();
 
-    const find = (mode) =>
+    const find = mode =>
       this.vectorSource
         .getFeatures()
-        .filter((feature) => feature.modification === mode);
+        .filter(feature => feature.modification === mode);
 
     const features = {
       updates: find("updated"),
       inserts: find("added"),
-      deletes: find("removed"),
+      deletes: find("removed")
     };
 
     if (
@@ -460,7 +460,7 @@ class MarkisConnectionModel {
   clearSearchResult() {
     this.searchResultLayer.getSource().clear();
     Object.assign(this.markisParameters, {
-      objectId: undefined,
+      objectId: undefined
     });
     this.localObserver.publish("search-results-cleared");
   }
@@ -479,7 +479,7 @@ class MarkisConnectionModel {
       createdBy: undefined,
       userMode: undefined,
       type: undefined,
-      regDate: undefined,
+      regDate: undefined
     });
     this.sourceName = undefined;
     this.editingExisting = false;
@@ -490,7 +490,7 @@ class MarkisConnectionModel {
 
   validateTradeGeometries() {
     var result = true;
-    this.vectorSource.forEachFeature((feature) => {
+    this.vectorSource.forEachFeature(feature => {
       if (
         (!feature.getProperties().diarie_nr ||
           !feature.getProperties().gbg_fastnr) &&
@@ -508,7 +508,7 @@ class MarkisConnectionModel {
       objectSerial: message.objectSerial,
       objectStatus: (message.objectStatus || "").toUpperCase(),
       createdBy: message.userName,
-      regDate: this.getTimeStampDate(),
+      regDate: this.getTimeStampDate()
     });
   }
 
@@ -523,14 +523,14 @@ class MarkisConnectionModel {
         if (foundSerial >= this.markisParameters.objectSerial) {
           Object.assign(contractControl, {
             contractOk: false,
-            message: "Det finns redan en gällande avtalsyta.",
+            message: "Det finns redan en gällande avtalsyta."
           });
           return contractControl;
         } else if (foundSerial < this.markisParameters.objectSerial) {
           Object.assign(contractControl, {
             contractOk: true,
             message:
-              "Du skapar en tilläggsyta. Kom ihåg att radera den gamla ytan om du inte vill att den ska ingå.",
+              "Du skapar en tilläggsyta. Kom ihåg att radera den gamla ytan om du inte vill att den ska ingå."
           });
           return contractControl;
         }
@@ -541,28 +541,26 @@ class MarkisConnectionModel {
         ) {
           Object.assign(contractControl, {
             contractOk: false,
-            message:
-              "Det finns en förslagsyta med ett annat händelselöpnummer.",
+            message: "Det finns en förslagsyta med ett annat händelselöpnummer."
           });
           return contractControl;
         }
         Object.assign(contractControl, {
           contractOk: true,
-          message: "Du redigerar nu en förslagsyta.",
+          message: "Du redigerar nu en förslagsyta."
         });
         return contractControl;
       } else {
         Object.assign(contractControl, {
           contractOk: false,
-          message: "De existerande avtalsytorna har inget status.",
+          message: "De existerande avtalsytorna har inget status."
         });
         return contractControl;
       }
     } else {
       Object.assign(contractControl, {
         contractOk: false,
-        type:
-          "Det finns redan en gällande avtalsyta. (Utan händelselöpnummer).",
+        type: "Det finns redan en gällande avtalsyta. (Utan händelselöpnummer)."
       });
       return contractControl;
     }
@@ -584,7 +582,10 @@ class MarkisConnectionModel {
   }
 
   lookupEstate(source, feature, callback) {
-    const projCode = this.map.getView().getProjection().getCode();
+    const projCode = this.map
+      .getView()
+      .getProjection()
+      .getCode();
 
     const geometry = feature.getGeometry();
 
@@ -593,7 +594,7 @@ class MarkisConnectionModel {
       srsName: projCode,
       outputFormat: "JSON", //source.outputFormat,
       geometryName: source.geometryField,
-      filter: new Intersects(source.geometryField, geometry, projCode),
+      filter: new Intersects(source.geometryField, geometry, projCode)
     };
 
     const node = this.wfsParser.writeGetFeature(options);
@@ -604,15 +605,15 @@ class MarkisConnectionModel {
       credentials: "same-origin",
       method: "POST",
       headers: {
-        "Content-Type": "text/xml",
+        "Content-Type": "text/xml"
       },
-      body: xmlString,
+      body: xmlString
     };
 
     return fetch(
       this.app.config.appConfig.searchProxy + source.url,
       request
-    ).then((response) => {
+    ).then(response => {
       return response.json();
     });
   }
@@ -623,10 +624,10 @@ class MarkisConnectionModel {
     let promises = [];
     let createdFeatures = [];
     const estateSource = this.sources.find(
-      (source) => source.layers[0] === this.estateSource
+      source => source.layers[0] === this.estateSource
     );
 
-    this.vectorSource.getFeatures().forEach((feature) => {
+    this.vectorSource.getFeatures().forEach(feature => {
       if (
         feature.modification === "added" ||
         feature.modification === "updated"
@@ -640,16 +641,19 @@ class MarkisConnectionModel {
       }
     });
 
-    Promise.all(promises).then((estateCollections) => {
+    Promise.all(promises).then(estateCollections => {
       if (estateCollections) {
-        estateCollections.forEach((estateCollection) => {
-          estateCollection.features.forEach((estate) => {
+        estateCollections.forEach(estateCollection => {
+          estateCollection.features.forEach(estate => {
             var parser = new GeoJSON();
             let estateArea = Math.round(
-              parser.readFeature(estate).getGeometry().getArea()
+              parser
+                .readFeature(estate)
+                .getGeometry()
+                .getArea()
             );
             let affectedArea = 0;
-            createdFeatures.forEach((drawnArea) => {
+            createdFeatures.forEach(drawnArea => {
               if (drawnArea.getGeometry().getType() === GeometryType.POLYGON) {
                 let interSection = intersect(
                   parser.writeFeatureObject(drawnArea),
@@ -671,14 +675,14 @@ class MarkisConnectionModel {
             });
             if (affectedArea > 0) {
               let objIndex = affectedEstates.findIndex(
-                (obj) => obj.estateName === estate.properties.fastighet
+                obj => obj.estateName === estate.properties.fastighet
               );
               if (objIndex === -1) {
                 affectedEstates.push({
                   estateName: estate.properties.fastighet,
                   estateId: estate.properties.fastnr_fk || "",
                   estateArea: estateArea,
-                  affectedArea: affectedArea,
+                  affectedArea: affectedArea
                 });
               }
             }
@@ -689,7 +693,7 @@ class MarkisConnectionModel {
           objectId: this.markisParameters.objectId || "",
           objectSerial: this.markisParameters.objectSerial || "",
           totalArea: totalArea,
-          affectedEstates: affectedEstates,
+          affectedEstates: affectedEstates
         };
         if (callback) callback(result);
       }
@@ -697,7 +701,7 @@ class MarkisConnectionModel {
   }
 
   invokeCompleteMessage(done) {
-    this.getAreaAndAffectedEstates((r) => {
+    this.getAreaAndAffectedEstates(r => {
       let message_string = JSON.stringify(r);
       this.connection.invoke(
         "OperationCompleted",
@@ -717,12 +721,12 @@ class MarkisConnectionModel {
     this.connection
       .start()
       .then(
-        function () {
+        function() {
           this.isConnected = true;
         }.bind(this)
       )
       .catch(
-        function () {
+        function() {
           this.publishMessage(
             "Webbkartan kunde inte ansluta till MarkIS.",
             "error",
@@ -733,11 +737,11 @@ class MarkisConnectionModel {
 
     this.connection.on(
       "Map.ShowContract",
-      function (_, showMessage) {
+      function(_, showMessage) {
         this.reset();
         Object.assign(this.markisParameters, {
           userMode: "Show",
-          type: "Contract",
+          type: "Contract"
         });
         const showObj = JSON.parse(showMessage);
         const validationResult = validateMessageParameters(
@@ -756,11 +760,11 @@ class MarkisConnectionModel {
 
     this.connection.on(
       "Map.ShowEstateGeometry",
-      function (_, message) {
+      function(_, message) {
         this.reset();
         Object.assign(this.markisParameters, {
           userMode: "Show",
-          type: "Estate",
+          type: "Estate"
         });
         const showEstateObj = JSON.parse(message);
         const validationResult = validateMessageParameters(
@@ -770,7 +774,7 @@ class MarkisConnectionModel {
         if (validationResult[0]) {
           this.assignMessageParameters(showEstateObj);
           const estateSource = this.sources.find(
-            (source) => source.layers[0] === this.estateSource
+            source => source.layers[0] === this.estateSource
           );
           this.localObserver.publish("show-existing-contract", {});
           this.doSearch(showEstateObj.objectId, estateSource);
@@ -786,11 +790,11 @@ class MarkisConnectionModel {
 
     this.connection.on(
       "Map.ShowLongLeaseGeometry",
-      function (_, message) {
+      function(_, message) {
         this.reset();
         Object.assign(this.markisParameters, {
           userMode: "Show",
-          type: "LongLease",
+          type: "LongLease"
         });
         const showLongLeaseObj = JSON.parse(message);
         const validationResult = validateMessageParameters(
@@ -800,8 +804,7 @@ class MarkisConnectionModel {
         if (validationResult[0]) {
           this.assignMessageParameters(showLongLeaseObj);
           const longLeaseSource = this.sources.find(
-            (source) =>
-              source.layers[0] === this.layerNames["longLeaseLayerName"]
+            source => source.layers[0] === this.layerNames["longLeaseLayerName"]
           );
 
           this.localObserver.publish("show-existing-contract", {});
@@ -818,11 +821,11 @@ class MarkisConnectionModel {
 
     this.connection.on(
       "Map.CreatePurchaseGeometry",
-      function (_, message) {
+      function(_, message) {
         this.reset();
         Object.assign(this.markisParameters, {
           userMode: "Create",
-          type: "Purchase",
+          type: "Purchase"
         });
         const createPurchaseObj = JSON.parse(message);
         const validationResult = validateMessageParameters(
@@ -844,11 +847,11 @@ class MarkisConnectionModel {
 
     this.connection.on(
       "Map.CreateSaleGeometry",
-      function (_, message) {
+      function(_, message) {
         this.reset();
         Object.assign(this.markisParameters, {
           userMode: "Create",
-          type: "Sale",
+          type: "Sale"
         });
         const createSaleObj = JSON.parse(message);
         const validationResult = validateMessageParameters(
@@ -870,11 +873,11 @@ class MarkisConnectionModel {
 
     this.connection.on(
       "Map.CreateContract",
-      function (_, createMessage) {
+      function(_, createMessage) {
         this.reset();
         Object.assign(this.markisParameters, {
           userMode: "Create",
-          type: "Contract",
+          type: "Contract"
         });
         const createContractObject = JSON.parse(createMessage);
         const validationResult = validateMessageParameters(
@@ -883,7 +886,7 @@ class MarkisConnectionModel {
         );
         if (validationResult[0]) {
           this.assignMessageParameters(createContractObject);
-          this.search(this.markisParameters.objectId, undefined, (result) => {
+          this.search(this.markisParameters.objectId, undefined, result => {
             let numExistingContracts = this.getNumberOfResults(result);
             if (numExistingContracts > 0) {
               var contractCollectionOk = this.validateContractCollection(
@@ -896,7 +899,7 @@ class MarkisConnectionModel {
                 this.highlightImpact(result);
                 Object.assign(this.markisParameters, {
                   userMode: "Show",
-                  type: "Contract",
+                  type: "Contract"
                 });
                 this.localObserver.publish("show-existing-contract", {});
               }
@@ -918,18 +921,18 @@ class MarkisConnectionModel {
   addExistingFeatures(existingGeom) {
     let featuresToAdd = undefined;
     const existingFeatures = new GeoJSON({
-      geometryName: this.geometryName,
+      geometryName: this.geometryName
     }).readFeatures(existingGeom[0]);
 
     const allFromSame = existingFeatures.every(
-      (feature) =>
+      feature =>
         feature.getProperties().handlopnr ===
         existingFeatures[0].getProperties().handlopnr
     );
 
     if (!allFromSame) {
       featuresToAdd = existingFeatures.filter(
-        (feature) =>
+        feature =>
           feature.getProperties().handlopnr.toString() ===
           this.markisParameters.objectSerial
       );
@@ -957,7 +960,7 @@ class MarkisConnectionModel {
         this.editingExisting = true;
         this.localObserver.publish("editing-existing-contract");
         this.addExistingFeatures(existingGeom);
-        this.vectorSource.getFeatures().forEach((feature) => {
+        this.vectorSource.getFeatures().forEach(feature => {
           feature.setId(this.featureIdCounter);
           this.featureIdCounter++;
           //If we are creating "Tilläggsavtal", all existing geometries are seen as "new" geometries (Added).
@@ -967,7 +970,7 @@ class MarkisConnectionModel {
           } else {
             feature.modification = "updated";
           }
-          feature.on("propertychange", (e) => {
+          feature.on("propertychange", e => {
             if (feature.modification === "removed") {
               return;
             }
@@ -978,7 +981,7 @@ class MarkisConnectionModel {
               feature.modification = "updated";
             }
           });
-          feature.on("change", (e) => {
+          feature.on("change", e => {
             if (feature.modification === "removed") {
               return;
             }
@@ -1006,7 +1009,7 @@ class MarkisConnectionModel {
     this.localObserver.publish("markisMessageEvent", {
       message: message,
       variant: variant,
-      reset: reset,
+      reset: reset
     });
   }
 
@@ -1014,19 +1017,22 @@ class MarkisConnectionModel {
     this.connection
       .stop()
       .then(
-        function () {
+        function() {
           this.isConnected = false;
         }.bind(this)
       )
-      .catch(function () {
+      .catch(function() {
         console.log("Disconnection from hub failed");
       });
   }
 
   lookUp(source, searchInput) {
-    const projCode = this.map.getView().getProjection().getCode();
+    const projCode = this.map
+      .getView()
+      .getProjection()
+      .getCode();
 
-    var isLikeFilters = source.searchFields.map((searchField) => {
+    var isLikeFilters = source.searchFields.map(searchField => {
       return new IsLike(
         searchField,
         searchInput,
@@ -1046,7 +1052,7 @@ class MarkisConnectionModel {
       outputFormat: "JSON", //source.outputFormat,
       geometryName: source.geometryField,
       maxFeatures: 100,
-      filter: filter,
+      filter: filter
     };
 
     const node = this.wfsParser.writeGetFeature(options);
@@ -1060,9 +1066,9 @@ class MarkisConnectionModel {
       signal: signal,
       method: "POST",
       headers: {
-        "Content-Type": "text/xml",
+        "Content-Type": "text/xml"
       },
-      body: xmlString,
+      body: xmlString
     };
     const promise = fetch(
       this.app.config.appConfig.searchProxy + source.url,
@@ -1083,26 +1089,26 @@ class MarkisConnectionModel {
         promises.push(promise);
         this.controllers.push(controller);
       } else {
-        this.sources.forEach((source) => {
+        this.sources.forEach(source => {
           const { promise, controller } = this.lookUp(source, searchInput);
           promises.push(promise);
           this.controllers.push(controller);
         });
       }
       Promise.all(promises)
-        .then((responses) => {
-          Promise.all(responses.map((result) => result.json()))
-            .then((jsonResults) => {
+        .then(responses => {
+          Promise.all(responses.map(result => result.json()))
+            .then(jsonResults => {
               jsonResults.forEach((jsonResult, i) => {
                 if (jsonResult.features.length > 0) {
                   arraySort({
                     array: jsonResult.features,
-                    index: this.sources[i].searchFields[0],
+                    index: this.sources[i].searchFields[0]
                   });
                 }
                 jsonResult.source = this.sources[i];
               });
-              jsonResults = jsonResults.filter(function (e) {
+              jsonResults = jsonResults.filter(function(e) {
                 return e.features.length > 0;
               });
               setTimeout(() => {
@@ -1110,15 +1116,15 @@ class MarkisConnectionModel {
               }, 500);
               if (callback) callback(jsonResults);
             })
-            .catch((parseErrors) => {});
+            .catch(parseErrors => {});
         })
-        .catch((responseErrors) => {});
+        .catch(responseErrors => {});
     }, 200);
   }
 
   doSearch(v, source) {
     if (v.length <= 3) return null;
-    this.search(v, source, (d) => {
+    this.search(v, source, d => {
       const numHits = this.getNumberOfResults(d);
       if (numHits < 1) {
         this.publishMessage(
@@ -1142,7 +1148,7 @@ class MarkisConnectionModel {
     });
   }
 
-  getNumberOfResults = (result) => {
+  getNumberOfResults = result => {
     return result.reduce((accumulated, result) => {
       return accumulated + result.features.length;
     }, 0);

@@ -42,29 +42,51 @@ class MarkisConnection extends React.PureComponent {
     }
   }
 
+  renderDrawerContent = () => {
+    return (
+      <div style={{ paddingBottom: "100%" }}>
+        <MarkisConnectionView
+          model={this.MarkisConnectionModel}
+          app={this.props.app}
+          localObserver={this.localObserver}
+        />
+      </div>
+    );
+  };
+
+  addDrawerToggleButton = () => {
+    const { app } = this.props;
+    app.globalObserver.publish("core.addDrawerToggleButton", {
+      value: "markisconnection",
+      ButtonIcon: DesktopWindowsIcon,
+      caption: "Markiskoppling",
+      order: 100,
+      renderDrawerContent: this.renderDrawerContent,
+    });
+  };
+
   render() {
     if (this.sessionId) {
-      return (
-        <BaseWindowPlugin
-          {...this.props}
-          type="Markisconnection"
-          custom={{
-            icon: <DesktopWindowsIcon />,
-            title: "Markiskoppling",
-            description: "Skapa och redigera avtalsytor.",
-            height: 320,
-            width: 290,
-            top: undefined,
-            left: undefined,
-          }}
-        >
-          <MarkisConnectionView
-            model={this.MarkisConnectionModel}
-            app={this.props.app}
-            localObserver={this.localObserver}
-          />
-        </BaseWindowPlugin>
-      );
+      return <>{this.addDrawerToggleButton()}</>;
+      // <BaseWindowPlugin
+      //   {...this.props}
+      //   type="Markisconnection"
+      //   custom={{
+      //     icon: <DesktopWindowsIcon />,
+      //     title: "Markiskoppling",
+      //     description: "Skapa och redigera avtalsytor.",
+      //     height: 320,
+      //     width: 290,
+      //     top: undefined,
+      //     left: undefined,
+      //   }}
+      // >
+      //   <MarkisConnectionView
+      //     model={this.MarkisConnectionModel}
+      //     app={this.props.app}
+      //     localObserver={this.localObserver}
+      //   />
+      // </BaseWindowPlugin>
     } else {
       return <div></div>;
     }

@@ -14,10 +14,10 @@ class MarkisConnection extends React.PureComponent {
 
     this.sessionId = this.getUrlParams("sid");
 
-    this.localObserver.subscribe("create-contract", message => {
+    this.localObserver.subscribe("create-contract", (message) => {
       props.app.globalObserver.publish("markisconnection.showWindow", {
         runCallBack: false,
-        hideOtherPluginWindows: false
+        hideOtherPluginWindows: false,
       });
     });
 
@@ -25,7 +25,7 @@ class MarkisConnection extends React.PureComponent {
       map: props.map,
       app: props.app,
       localObserver: this.localObserver,
-      options: props.options
+      options: props.options,
     });
   }
 
@@ -61,7 +61,7 @@ class MarkisConnection extends React.PureComponent {
       ButtonIcon: DesktopWindowsIcon,
       caption: "Markiskoppling",
       order: 100,
-      renderDrawerContent: this.renderDrawerContent
+      renderDrawerContent: this.renderDrawerContent,
     });
   };
 

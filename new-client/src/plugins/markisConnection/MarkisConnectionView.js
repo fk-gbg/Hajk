@@ -7,11 +7,11 @@ import Toolbar from "./components/Toolbar";
 import AttributeEditor from "./components/AttributeEditor";
 import { withSnackbar } from "notistack";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
     textAlign: "center",
-    padding: theme.spacing(1)
-  }
+    padding: theme.spacing(1),
+  },
 });
 
 class MarkisConnectionView extends React.Component {
@@ -22,28 +22,28 @@ class MarkisConnectionView extends React.Component {
       type: undefined,
       objectId: undefined,
       editFeatureId: undefined,
-      featuresExist: undefined
+      featuresExist: undefined,
     };
 
     this.localObserver = this.props.localObserver;
     this.globalObserver = this.props.app.globalObserver;
 
-    this.localObserver.subscribe("markisMessageEvent", message => {
+    this.localObserver.subscribe("markisMessageEvent", (message) => {
       this.showAdvancedSnackbar(message.message, message.variant);
       if (message.reset) {
         this.reset();
       }
     });
 
-    this.localObserver.subscribe("show-existing-contract", message => {
+    this.localObserver.subscribe("show-existing-contract", (message) => {
       this.updateState();
     });
 
-    this.localObserver.subscribe("create-contract", message => {
+    this.localObserver.subscribe("create-contract", (message) => {
       this.updateState();
     });
 
-    this.localObserver.subscribe("search-results-cleared", message => {
+    this.localObserver.subscribe("search-results-cleared", (message) => {
       this.updateState();
     });
   }
@@ -52,12 +52,12 @@ class MarkisConnectionView extends React.Component {
     this.setState({
       userMode: this.props.model.markisParameters.userMode,
       type: this.props.model.markisParameters.type,
-      objectId: this.props.model.markisParameters.objectId
+      objectId: this.props.model.markisParameters.objectId,
     });
   }
 
   showAdvancedSnackbar = (message, variant) => {
-    const action = key => (
+    const action = (key) => (
       <>
         <Button
           onClick={() => {
@@ -73,7 +73,7 @@ class MarkisConnectionView extends React.Component {
       variant: variant || "error",
       autoHideDuration: 7000,
       persist: false,
-      action
+      action,
     });
   };
 
@@ -84,7 +84,7 @@ class MarkisConnectionView extends React.Component {
       type: this.props.model.markisParameters.type,
       objectId: undefined,
       editFeatureId: undefined,
-      featuresExist: undefined
+      featuresExist: undefined,
     });
   }
 
@@ -124,7 +124,7 @@ class MarkisConnectionView extends React.Component {
 }
 
 MarkisConnectionView.propTypes = {
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object.isRequired,
 };
 
 export default withStyles(styles)(withSnackbar(MarkisConnectionView));

@@ -3,18 +3,17 @@ import Typography from "@material-ui/core/Typography";
 import Chip from "@material-ui/core/Chip";
 import Popover from "@material-ui/core/Popover";
 import { withStyles } from "@material-ui/core/styles";
-import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
 
-const styles = theme => ({
+const styles = (theme) => ({
   chip: {
-    margin: "2px"
+    margin: "2px",
   },
   text: {
-    margin: theme.spacing(1)
+    margin: theme.spacing(1),
   },
   popOver: {
-    maxWidth: "500px"
-  }
+    maxWidth: "500px",
+  },
 });
 
 class Informationbar extends React.Component {
@@ -22,22 +21,22 @@ class Informationbar extends React.Component {
     super(props);
 
     this.state = {
-      anchorEl: null
+      anchorEl: null,
     };
   }
 
   renderInformation() {
     const { classes, model } = this.props;
 
-    const openPopover = event => {
+    const openPopover = (event) => {
       this.setState({
-        anchorEl: event.currentTarget
+        anchorEl: event.currentTarget,
       });
     };
 
     const handleClose = () => {
       this.setState({
-        anchorEl: null
+        anchorEl: null,
       });
     };
 
@@ -53,11 +52,11 @@ class Informationbar extends React.Component {
           onClose={handleClose}
           anchorOrigin={{
             vertical: "bottom",
-            horizontal: "center"
+            horizontal: "center",
           }}
           transformOrigin={{
             vertical: "top",
-            horizontal: "center"
+            horizontal: "center",
           }}
         >
           <Typography

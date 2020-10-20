@@ -191,7 +191,7 @@ class AttributeEditor extends React.Component {
           className={classes.attributeButtons}
           onClick={this.acceptAttributes}
         >
-          Ok
+          <Typography>Ok</Typography>
         </Button>
       </div>
     );

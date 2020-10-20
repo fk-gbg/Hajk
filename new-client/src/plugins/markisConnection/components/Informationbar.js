@@ -116,15 +116,6 @@ class Informationbar extends React.Component {
             className={classes.chip}
             variant="outlined"
           />
-          <Chip
-            label={"Hjälp!"}
-            className={classes.chip}
-            color="primary"
-            variant="outlined"
-            clickable
-            onClick={openPopover}
-          />
-          {popOver}
         </div>
       );
     } else if (
@@ -141,15 +132,6 @@ class Informationbar extends React.Component {
             className={classes.chip}
             variant="outlined"
           />
-          <Chip
-            label={"Hjälp!"}
-            className={classes.chip}
-            color="primary"
-            variant="outlined"
-            clickable
-            onClick={openPopover}
-          />
-          {popOver}
         </div>
       );
     } else if (this.props.userMode === "Show" && this.props.objectId) {

@@ -1,12 +1,18 @@
 import React from "react";
-import BaseWindowPlugin from "../BaseWindowPlugin";
 
 import DesktopWindowsIcon from "@material-ui/icons/DesktopWindows";
+import { withStyles } from "@material-ui/core/styles";
+import { withSnackbar } from "notistack";
 
 import MarkisConnectionModel from "./MarkisConnectionModel";
 import MarkisConnectionView from "./MarkisConnectionView";
 import Observer from "react-event-observer";
 
+const styles = (theme) => ({
+  root: {
+    backgroundColor: theme.palette.background.default,
+  },
+});
 class MarkisConnection extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -43,8 +49,9 @@ class MarkisConnection extends React.PureComponent {
   }
 
   renderDrawerContent = () => {
+    const { classes } = this.props;
     return (
-      <div>
+      <div className={classes.root}>
         <MarkisConnectionView
           model={this.MarkisConnectionModel}
           app={this.props.app}
@@ -74,4 +81,4 @@ class MarkisConnection extends React.PureComponent {
   }
 }
 
-export default MarkisConnection;
+export default withStyles(styles)(withSnackbar(MarkisConnection));

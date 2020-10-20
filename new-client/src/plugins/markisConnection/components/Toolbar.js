@@ -13,6 +13,7 @@ import Button from "@material-ui/core/Button";
 import { withStyles } from "@material-ui/core/styles";
 import SaveIcon from "@material-ui/icons/Save";
 import CancelIcon from "@material-ui/icons/Cancel";
+import { Typography } from "@material-ui/core";
 
 const styles = (theme) => ({
   container: {
@@ -26,11 +27,11 @@ const styles = (theme) => ({
   },
   createButtons: {
     margin: theme.spacing(1),
-    width: 110,
+    width: 100,
   },
   clearSearchButton: {
     margin: theme.spacing(1),
-    width: 110,
+    width: 100,
     textAlign: "center",
   },
   styledButtonGroup: {
@@ -39,18 +40,28 @@ const styles = (theme) => ({
     width: "100%",
   },
   styledToggleButton: {
-    margin: theme.spacing(0),
-    border: "1px solid #575757",
-    color: "#575757",
-    width: 125,
+    width: "100%",
+    color: theme.palette.text.secondary,
+    justifyContent: "left",
   },
   centerElements: {
     textAlign: "center",
+    position: "absolute",
+    bottom: theme.spacing(1),
+    width: "100%",
   },
   toolIcons: {
-    margin: theme.spacing(0.5),
+    paddingRight: theme.spacing(0.5),
   },
 });
+
+const StyledToggleButtonGroup = withStyles((theme) => ({
+  grouped: {
+    borderRight: "none",
+    borderLeft: "none",
+    borderRadius: 0,
+  },
+}))(ToggleButtonGroup);
 
 class Toolbar extends React.Component {
   state = {
@@ -207,100 +218,97 @@ class Toolbar extends React.Component {
   renderButtons() {
     const { classes, model } = this.props;
     const editTools = (
-      <Grid container spacing={1} direction="column" alignItems="center">
-        <Grid item>
-          <ToggleButtonGroup
-            variant="contained"
-            className={classes.styledButtonGroup}
-            size="medium"
-            exclusive
-            onChange={this.handleChange("createMethod")}
-            value={this.state.createMethod}
+      <Grid container direction="column" alignItems="center">
+        <StyledToggleButtonGroup
+          orientation="vertical"
+          className={classes.styledButtonGroup}
+          size="small"
+          exclusive
+          onChange={this.handleChange("createMethod")}
+          value={this.state.createMethod}
+        >
+          <ToggleButton
+            className={classes.styledToggleButton}
+            key={1}
+            value="add"
+            disabled={!this.state.allowPolygon}
           >
-            <ToggleButton
-              className={classes.styledToggleButton}
-              key={1}
-              value="add"
-              disabled={!this.state.allowPolygon}
-              title="Skapa en ny yta."
-            >
-              <FormatShapesIcon className={classes.toolIcons} />
-              SKAPA YTA
-            </ToggleButton>
-            <ToggleButton
-              className={classes.styledToggleButton}
-              disabled={!this.state.allowLine}
-              key={2}
-              value="addLine"
-              title="Skapa en ny linje."
-            >
-              <TimelineIcon fontSize="large" className={classes.toolIcons} />
-              SKAPA LINJE
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Grid>
-        <Grid item>
-          <ToggleButtonGroup
-            variant="contained"
-            className={classes.styledButtonGroup}
-            exclusive
-            onChange={this.handleChange("createMethod")}
-            size="medium"
-            value={this.state.createMethod}
+            <Tooltip title="Klicka på första punkten där du vill skapa en nod, och fortsätt klicka en gång per ny nod. Avsluta med dubbelklick.">
+              <span style={{ display: "flex" }}>
+                <FormatShapesIcon size="small" className={classes.toolIcons} />
+                <Typography>SKAPA YTA</Typography>
+              </span>
+            </Tooltip>
+          </ToggleButton>
+
+          <ToggleButton
+            className={classes.styledToggleButton}
+            disabled={!this.state.allowLine}
+            key={2}
+            value="addLine"
           >
-            <ToggleButton
-              className={classes.styledToggleButton}
-              key={3}
-              value="addEstate"
-              title="Välj en yta i kartan att utgå från."
-              disabled={!this.state.allowPolygon}
-            >
-              <TouchAppIcon className={classes.toolIcons} />
-              VÄLJ YTA
-            </ToggleButton>
-            <ToggleButton
-              className={classes.styledToggleButton}
-              key={4}
-              disabled={!this.state.featuresExist}
-              value="edit"
-              title="Redigera en yta genom att dra i kartan."
-            >
-              <EditIcon className={classes.toolIcons} />
-              REDIGERA
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Grid>
-        <Grid item>
-          <ToggleButtonGroup
-            variant="contained"
-            className={classes.styledButtonGroup}
-            exclusive
-            onChange={this.handleChange("createMethod")}
-            size="medium"
-            value={this.state.createMethod}
+            <Tooltip title="Klicka på första punkten där du vill skapa en nod, och fortsätt klicka en gång per ny nod. Avsluta med dubbelklick.">
+              <span style={{ display: "flex" }}>
+                <TimelineIcon className={classes.toolIcons} />
+                <Typography>SKAPA LINJE</Typography>
+              </span>
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton
+            className={classes.styledToggleButton}
+            key={3}
+            value="addEstate"
+            disabled={!this.state.allowPolygon}
           >
-            <ToggleButton
-              className={classes.styledToggleButton}
-              key={5}
-              disabled={!this.state.featuresExist}
-              value="remove"
-              title="Ta bort ett objekt genom att markera det i kartan."
-            >
-              <DeleteIcon className={classes.toolIcons} />
-              RADERA
-            </ToggleButton>
-            <ToggleButton
-              className={classes.styledToggleButton}
-              disabled={!model.promptForAttributes || !this.state.featuresExist}
-              key={6}
-              value="editAttributes"
-              title="Ändra ytans attribut genom att markera den i kartan."
-            >
-              <TuneIcon className={classes.toolIcons} />
-              ÄNDRA ATTRIBUT
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Grid>
+            <Tooltip title="För att kopiera en befintlig yta, säkerställ att lagret du vill kopiera en yta ifrån är tänt i lagerhanteraren (syns även som flik längst ner i kartan) och att objektet inte täcks av objekt från något annat lager (gäller ej bakgrundskartor). Släck annars lagret (räcker ej att klicka på ögat). Så snart du har valt ett objekt kopplas det till det avtal du redigerar.">
+              <span style={{ display: "flex" }}>
+                <TouchAppIcon className={classes.toolIcons} />
+                <Typography>VÄLJ YTA</Typography>
+              </span>
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton
+            className={classes.styledToggleButton}
+            key={4}
+            disabled={!this.state.featuresExist}
+            value="edit"
+          >
+            <Tooltip title="För att redigera en geometri; klicka på verktyget och dra sedan i noderna.">
+              <span style={{ display: "flex" }}>
+                <EditIcon className={classes.toolIcons} />
+                <Typography>REDIGERA</Typography>
+              </span>
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton
+            className={classes.styledToggleButton}
+            key={5}
+            disabled={!this.state.featuresExist}
+            value="remove"
+            title="Ta bort ett objekt genom att markera det i kartan."
+          >
+            <Tooltip title="Om du vill radera en yta kan du använda Radera-verktyget. Aktivera verktyget i menyn och klicka sedan på den yta du vill ta bort. För att ytan skall försvinna från Markis måste du klicka på spara när du är klar. OBS: Du kan enbart radera ytor kopplade till det avtal du arbetar med.">
+              <span style={{ display: "flex" }}>
+                <DeleteIcon className={classes.toolIcons} />
+                <Typography>RADERA</Typography>
+              </span>
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton
+            className={classes.styledToggleButton}
+            disabled={!model.promptForAttributes || !this.state.featuresExist}
+            key={6}
+            value="editAttributes"
+            title="Ändra ytans attribut genom att markera den i kartan."
+          >
+            <Tooltip title="Om du vill ändra attribut på en yta kan du använda Ändra attribut-verktyget. Aktivera verktyget i menyn och klicka sedan på den yta du vill redigera. För att ytan skall uppdateras måste du klicka på spara när du är klar.">
+              <span style={{ display: "flex" }}>
+                <TuneIcon className={classes.toolIcons} />
+                <Typography>ÄNDRA ATTRIBUT</Typography>
+              </span>
+            </Tooltip>
+          </ToggleButton>
+        </StyledToggleButtonGroup>
       </Grid>
     );
 
@@ -310,6 +318,7 @@ class Toolbar extends React.Component {
           <Button
             variant="contained"
             color="primary"
+            size="small"
             className={classes.createButtons}
             onClick={this.saveCreated}
             startIcon={<SaveIcon />}
@@ -318,7 +327,7 @@ class Toolbar extends React.Component {
               !(this.state.featureModified && this.state.editingExisting)
             }
           >
-            Spara
+            <Typography>Spara</Typography>
           </Button>
         </span>
       </Tooltip>
@@ -329,11 +338,12 @@ class Toolbar extends React.Component {
         <span>
           <Button
             variant="contained"
+            size="small"
             className={classes.createButtons}
             onClick={this.abortCreation}
             startIcon={<CancelIcon />}
           >
-            Avbryt
+            <Typography>Avbryt</Typography>
           </Button>
         </span>
       </Tooltip>
@@ -348,7 +358,7 @@ class Toolbar extends React.Component {
             onClick={this.clearSearchResult}
             disabled={!model.markisParameters.objectId}
           >
-            Rensa
+            <Typography>Rensa</Typography>
           </Button>
         </span>
       </Tooltip>
@@ -368,9 +378,15 @@ class Toolbar extends React.Component {
           </div>
         );
       } else {
-        return (
-          <div className={classes.centerElements}>{btnRemoveSearchResult}</div>
-        );
+        if (model.markisParameters.objectId) {
+          return (
+            <div className={classes.centerElements}>
+              {btnRemoveSearchResult}
+            </div>
+          );
+        } else {
+          return null;
+        }
       }
     } else {
       return null;

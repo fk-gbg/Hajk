@@ -308,37 +308,30 @@ class MarkisConnectionModel {
       this.createMethod = method;
     }
     this.removeInteraction();
-
-    if (this.createMethod === "abort") {
-      this.map.clickLock.delete("markisconnection");
-    } else {
-      this.map.clickLock.add("markisconnection");
-    }
-
     if (this.createMethod === "remove") {
       this.map.on("singleclick", this.removeSelected);
     }
-
     if (this.createMethod === "add") {
       this.type = "Polygon";
       this.setType(this.type);
     }
-
     if (this.createMethod === "addLine") {
       this.type = "LineString";
       this.setType(this.type);
     }
-
     if (this.createMethod === "addEstate") {
       this.map.on("singleclick", this.onSelectFeatures);
     }
-
     if (this.createMethod === "edit") {
       this.setEditActive();
     }
-
     if (this.createMethod === "editAttributes") {
       this.map.on("singleclick", this.selectForEdit);
+    }
+    if (this.createMethod === "abort") {
+      this.map.clickLock.delete("markisconnection");
+    } else {
+      this.map.clickLock.add("markisconnection");
     }
   }
 

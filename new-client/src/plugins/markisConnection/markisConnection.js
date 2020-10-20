@@ -36,6 +36,7 @@ class MarkisConnection extends React.PureComponent {
   }
 
   getUrlParams(name) {
+    console.log(window.localStorage.getItem("activeDrawerContent"));
     var match = RegExp("[?&]" + name + "=([^&]*)").exec(window.location.search);
     return match && decodeURIComponent(match[1].replace(/\+/g, " "));
   }
@@ -44,6 +45,19 @@ class MarkisConnection extends React.PureComponent {
     if (this.sessionId !== undefined && this.sessionId !== null) {
       if (!this.MarkisConnectionModel.isConnected) {
         this.MarkisConnectionModel.connectToHub(this.sessionId);
+        this.props.app.globalObserver.publish(
+          "core.drawerContentChanged",
+          "markisconnection"
+        );
+      }
+    } else {
+      if (
+        window.localStorage.getItem("activeDrawerContent") ===
+          "markisconnection" ||
+        !window.localStorage.getItem("activeDrawerContent")
+      ) {
+        window.localStorage.removeItem("activeDrawerContent");
+        this.props.app.globalObserver.publish("core.drawerContentChanged");
       }
     }
   }

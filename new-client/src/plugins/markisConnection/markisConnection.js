@@ -11,6 +11,8 @@ import Observer from "react-event-observer";
 const styles = (theme) => ({
   root: {
     backgroundColor: theme.palette.background.default,
+    maxHeight: "80vh",
+    overflow: "hidden",
   },
 });
 class MarkisConnection extends React.PureComponent {
@@ -21,10 +23,13 @@ class MarkisConnection extends React.PureComponent {
     this.sessionId = this.getUrlParams("sid");
 
     this.localObserver.subscribe("create-contract", (message) => {
-      props.app.globalObserver.publish("markisconnection.showWindow", {
-        runCallBack: false,
-        hideOtherPluginWindows: false,
-      });
+      window.localStorage.setItem("drawerPermanent", true);
+
+      this.props.app.globalObserver.publish(
+        "core.drawerContentChanged",
+        "markisconnection"
+      );
+      this.props.app.globalObserver.publish("core.drawerToggled");
     });
 
     this.MarkisConnectionModel = new MarkisConnectionModel({
@@ -45,19 +50,21 @@ class MarkisConnection extends React.PureComponent {
     if (this.sessionId !== undefined && this.sessionId !== null) {
       if (!this.MarkisConnectionModel.isConnected) {
         this.MarkisConnectionModel.connectToHub(this.sessionId);
-        this.props.app.globalObserver.publish(
-          "core.drawerContentChanged",
-          "markisconnection"
-        );
       }
     } else {
       if (
         window.localStorage.getItem("activeDrawerContent") ===
-          "markisconnection" ||
-        !window.localStorage.getItem("activeDrawerContent")
+          "markisconnection" &&
+        !window.localStorage.getItem("drawerPermanent")
       ) {
         window.localStorage.removeItem("activeDrawerContent");
-        this.props.app.globalObserver.publish("core.drawerContentChanged");
+        this.props.app.globalObserver.publish("core.hideDrawer");
+      } else if (
+        window.localStorage.getItem("activeDrawerContent") ===
+          "markisconnection" &&
+        window.localStorage.getItem("drawerPermanent")
+      ) {
+        window.localStorage.setItem("activeDrawerContent", "plugins");
       }
     }
   }

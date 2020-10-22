@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import Button from "@material-ui/core/Button";
 import Informationbar from "./components/Informationbar";
 import Toolbar from "./components/Toolbar";
+import AffectedEstates from "./components/AffectedEstates";
 import AttributeEditor from "./components/AttributeEditor";
 import { withSnackbar } from "notistack";
 
@@ -110,6 +111,12 @@ class MarkisConnectionView extends React.Component {
             userMode={this.state.userMode}
             type={this.state.type}
           />
+        </div>
+        <div>
+          <AffectedEstates
+            model={this.props.model}
+            localObserver={this.props.localObserver}
+          ></AffectedEstates>
         </div>
         <div>
           <AttributeEditor

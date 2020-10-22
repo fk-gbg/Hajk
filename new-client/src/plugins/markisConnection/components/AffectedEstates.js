@@ -1,6 +1,6 @@
 import React from "react";
 import Typography from "@material-ui/core/Typography";
-import { withStyles } from "@material-ui/core/styles";
+import { withStyles, withTheme } from "@material-ui/core/styles";
 import Accordion from "@material-ui/core/Accordion";
 import AccordionSummary from "@material-ui/core/AccordionSummary";
 import AccordionDetails from "@material-ui/core/AccordionDetails";
@@ -9,6 +9,12 @@ import Tooltip from "@material-ui/core/Tooltip";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
+import Grid from "@material-ui/core/Grid";
+import SentimentVeryDissatisfiedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
+import Paper from "@material-ui/core/Paper";
+import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
+import { IconButton } from "@material-ui/core";
+import Popover from "@material-ui/core/Popover";
 
 const styles = (theme) => ({
   root: {
@@ -18,8 +24,8 @@ const styles = (theme) => ({
     maxHeight: 300,
     overflow: "auto",
   },
-  affectedEstateDetails: {
-    color: theme.palette.text.secondary,
+  errorContainer: {
+    padding: theme.spacing(1),
   },
 });
 
@@ -35,6 +41,12 @@ const StyledAccordionSummary = withStyles((theme) => ({
   },
 }))(AccordionSummary);
 
+const StyledAccordionDetails = withStyles((theme) => ({
+  root: {
+    padding: 0,
+  },
+}))(AccordionDetails);
+
 class AffectedEstates extends React.Component {
   constructor(props) {
     super(props);
@@ -43,36 +55,26 @@ class AffectedEstates extends React.Component {
       contractInformation: null,
       editFeatureId: props.model.editFeatureId,
       promptForAttributes: props.model.promptForAttributes,
+      color: props.theme.palette.success.main,
+      missingArea: 0,
+      anchorEl: null,
+      status: "success",
     };
 
+    props.localObserver.subscribe("create-contract", (message) => {
+      this.updateEstateInfo();
+    });
+
     props.localObserver.subscribe("feature-modified", (vectorSource) => {
-      props.model.getAreaAndAffectedEstates((r) => {
-        this.setState({
-          contractInformation: r,
-          editFeatureId: props.model.editFeatureId,
-          promptForAttributes: props.model.promptForAttributes,
-        });
-      });
+      this.updateEstateInfo();
     });
 
     props.localObserver.subscribe("feature-added", (message) => {
-      props.model.getAreaAndAffectedEstates((r) => {
-        this.setState({
-          contractInformation: r,
-          editFeatureId: props.model.editFeatureId,
-          promptForAttributes: props.model.promptForAttributes,
-        });
-      });
+      this.updateEstateInfo();
     });
 
     props.localObserver.subscribe("feature-deleted-by-user", (message) => {
-      props.model.getAreaAndAffectedEstates((r) => {
-        this.setState({
-          contractInformation: r,
-          editFeatureId: props.model.editFeatureId,
-          promptForAttributes: props.model.promptForAttributes,
-        });
-      });
+      this.updateEstateInfo();
     });
 
     props.localObserver.subscribe("feature-selected-for-edit", (message) => {
@@ -88,56 +90,188 @@ class AffectedEstates extends React.Component {
     });
   }
 
+  checkMissingEstates = (result) => {
+    const { theme } = this.props;
+    if (result.error) {
+      return {
+        color: theme.palette.error.main,
+        missingArea: 0,
+        status: "error",
+      };
+    }
+
+    let totalEstateArea = 0;
+    if (result.affectedEstates) {
+      result.affectedEstates.map((estate) => {
+        return (totalEstateArea += estate.affectedArea);
+      });
+
+      let dif = 0;
+
+      if (result.totalArea > 0) {
+        dif = (result.totalArea - totalEstateArea) / result.totalArea;
+      }
+
+      if (dif < 0.1) {
+        return {
+          color: theme.palette.success.main,
+          missingArea: result.totalArea - totalEstateArea,
+          status: "success",
+        };
+      } else {
+        return {
+          color: theme.palette.warning.main,
+          missingArea: result.totalArea - totalEstateArea,
+          status: "warning",
+        };
+      }
+    }
+  };
+
+  updateEstateInfo = () => {
+    const { model } = this.props;
+    model.getAreaAndAffectedEstates((r) => {
+      let missingSummary = this.checkMissingEstates(r);
+      this.setState({
+        contractInformation: r,
+        editFeatureId: model.editFeatureId,
+        promptForAttributes: model.promptForAttributes,
+        color: missingSummary.color,
+        missingArea: missingSummary.missingArea,
+        status: missingSummary.status,
+      });
+    });
+  };
+
   setAttributesActive = () => {
     const { editFeatureId, promptForAttributes } = this.state;
 
     return editFeatureId && promptForAttributes;
   };
 
-  calculateContractInfo = () => {
-    this.props.model.getAreaAndAffectedEstates((r) => {
-      this.setState({
-        contractInformation: r,
-      });
+  getAccordionStyle = () => {
+    const { theme } = this.props;
+    return {
+      width: "100%",
+      borderLeft: `${theme.spacing(0.5)}px solid ${this.state.color}`,
+    };
+  };
+
+  togglePopper = (e) => {
+    this.setState({
+      anchorEl: this.state.anchorEl ? null : e.currentTarget,
     });
+  };
+
+  renderHelpIcon = () => {
+    return (
+      <Tooltip title="Varför är det orange?">
+        <IconButton
+          onClick={(e) => {
+            this.togglePopper(e);
+          }}
+        >
+          <HelpOutlineIcon />
+        </IconButton>
+      </Tooltip>
+    );
+  };
+
+  renderPopper = () => {
+    const { theme } = this.props;
+    const id = Boolean(this.state.anchorEl) ? "simple-popper" : undefined;
+    return (
+      <Popover
+        id={id}
+        open={Boolean(this.state.anchorEl)}
+        onClose={(e) => {
+          this.togglePopper(e);
+        }}
+        anchorEl={this.state.anchorEl}
+      >
+        <Paper
+          style={{
+            border: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+            padding: theme.spacing(1),
+            maxWidth: 300,
+          }}
+          elevation={3}
+        >
+          <Typography align="center" variant="caption">
+            Den sammanlagda arean på de ritade avtalsgeometrierna stämmer ej
+            överens med den totala arean på de berörda fastigheterna. <br />{" "}
+            <br />
+            Förmodligen beror detta på att fastigheten saknas i MARKIS. <br />{" "}
+            <br />
+            Försäkra dig om att de ritade avtalsgeometrierna ligger på de
+            fastigheter som du ämnade.
+            <br /> <br />
+            Differensen är beräknad till: {this.state.missingArea} m2.
+          </Typography>
+        </Paper>
+      </Popover>
+    );
   };
 
   renderEstateList = () => {
     const { contractInformation } = this.state;
-    const { classes } = this.props;
-    if (contractInformation && contractInformation.affectedEstates) {
+    const { classes, theme } = this.props;
+    if (!contractInformation) {
+      return null;
+    }
+    if (contractInformation.affectedEstates) {
       return (
-        <List dense={true}>
+        <List
+          dense={true}
+          style={{ width: "100%", paddingTop: 0, paddingBottom: 0 }}
+        >
+          <ListItem
+            key={"total"}
+            style={{
+              border: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+            }}
+            alignItems="flex-start"
+          >
+            <ListItemText
+              primary={`Avtal: ${contractInformation.objectId}`}
+              disableTypography={true}
+              secondary={
+                <div>
+                  <div>
+                    <Typography variant="caption">{`Händelse: ${contractInformation.objectSerial}`}</Typography>
+                  </div>
+                  <div>
+                    <Typography variant="caption">{`Total area: ${contractInformation.totalArea.toLocaleString(
+                      "sv-SE"
+                    )} m2 ~${(contractInformation.totalArea / 10000).toFixed(
+                      2
+                    )} ha`}</Typography>
+                  </div>
+                </div>
+              }
+            ></ListItemText>
+            {this.state.status === "warning" && this.renderHelpIcon()}
+          </ListItem>
           {contractInformation.affectedEstates.map((estate, index) => {
-            console.log("estate: ", estate);
             return (
-              <ListItem key={index}>
+              <ListItem key={index} alignItems="flex-start">
                 <ListItemText
                   primary={estate.estateName}
                   disableTypography={true}
                   secondary={
                     <div>
                       <div>
-                        <Typography
-                          variant="caption"
-                          className={classes.affectedEstateDetails}
-                        >{`Total area: ${estate.estateArea.toLocaleString(
+                        <Typography variant="caption">{`Total area: ${estate.estateArea.toLocaleString(
                           "sv-SE"
                         )} m2`}</Typography>
                       </div>
                       <div>
-                        <Typography
-                          variant="caption"
-                          className={classes.affectedEstateDetails}
-                        >{`Berörd area: ${estate.affectedArea.toLocaleString(
+                        <Typography variant="caption">{`Berörd area: ${estate.affectedArea.toLocaleString(
                           "sv-SE"
                         )} m2`}</Typography>
                       </div>
                       <div>
-                        <Typography
-                          variant="caption"
-                          className={classes.affectedEstateDetails}
-                        >{`Berörd andel: ${Math.ceil(
+                        <Typography variant="caption">{`Berörd andel: ${Math.ceil(
                           (estate.affectedArea / estate.estateArea) * 100
                         )}%`}</Typography>
                       </div>
@@ -150,6 +284,36 @@ class AffectedEstates extends React.Component {
         </List>
       );
     }
+    if (contractInformation.error) {
+      return (
+        <Grid
+          container
+          alignContent="center"
+          className={classes.errorContainer}
+        >
+          <Grid item xs={12} style={{ alignItems: "center", display: "flex" }}>
+            <Typography variant="h6">Ojdå...</Typography>
+            <SentimentVeryDissatisfiedIcon />
+          </Grid>
+          <Grid item xs={12}>
+            <Paper
+              style={{
+                border: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+                padding: theme.spacing(1),
+              }}
+              elevation={3}
+            >
+              <Typography align="center" variant="caption">
+                Någon av de ritade geometrierna innehåller fel. Berörda
+                fastigheter kan ej beräknas. <br /> <br />
+                Kolla över geometrierna och rätta eventuella fel, alternativt ta
+                bort geometrierna och rita nya.
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+      );
+    }
   };
 
   renderAffectedEstates = () => {
@@ -160,22 +324,22 @@ class AffectedEstates extends React.Component {
       !this.setAttributesActive()
     ) {
       return (
-        <div className={classes.root}>
-          <Tooltip title="Klicka här för att se vilka (och till hur stor area) fastigheter som avtalsytorna påverkar.">
-            <Accordion onClick={this.calculateContractInfo}>
+        <div style={this.getAccordionStyle()}>
+          <Accordion>
+            <Tooltip title="Klicka här för att se vilka (och till hur stor area) fastigheter som avtalsytorna påverkar.">
               <StyledAccordionSummary
                 expandIcon={<ExpandMoreIcon />}
-                className={classes.styledAccordion}
                 aria-controls="panel1a-content"
                 id="panel1a-header"
               >
                 <Typography>BERÖRDA FASTIGHETER</Typography>
               </StyledAccordionSummary>
-              <AccordionDetails className={classes.details}>
-                {this.renderEstateList()}
-              </AccordionDetails>
-            </Accordion>
-          </Tooltip>
+            </Tooltip>
+            <StyledAccordionDetails className={classes.details}>
+              {this.renderEstateList()}
+            </StyledAccordionDetails>
+          </Accordion>
+          {this.renderPopper()}
         </div>
       );
     } else {
@@ -188,4 +352,4 @@ class AffectedEstates extends React.Component {
   }
 }
 
-export default withStyles(styles)(AffectedEstates);
+export default withStyles(styles)(withTheme(AffectedEstates));

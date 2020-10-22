@@ -1,5 +1,6 @@
 import * as signalR from "@microsoft/signalr";
 import intersect from "@turf/intersect";
+import kinks from "@turf/kinks";
 import { WFS } from "ol/format";
 import GeometryType from "ol/geom/GeometryType";
 import IsLike from "ol/format/filter/IsLike";
@@ -611,6 +612,20 @@ class MarkisConnectionModel {
     });
   }
 
+  checkForSelfIntersect = () => {
+    return this.vectorSource.getFeatures().some((feature) => {
+      if (
+        feature.modification === "added" ||
+        feature.modification === "updated"
+      ) {
+        let intersects = kinks(new GeoJSON().writeFeatureObject(feature));
+        return intersects.features.length > 1;
+      } else {
+        return false;
+      }
+    });
+  };
+
   getAreaAndAffectedEstates(callback) {
     let affectedEstates = [];
     let totalArea = 0;
@@ -620,85 +635,104 @@ class MarkisConnectionModel {
       (source) => source.layers[0] === this.estateSource
     );
 
-    this.vectorSource.getFeatures().forEach((feature) => {
-      if (
-        feature.modification === "added" ||
-        feature.modification === "updated"
-      ) {
-        createdFeatures.push(feature);
-        let geom = feature.getGeometry();
-        if (geom.getType() === GeometryType.POLYGON) {
-          totalArea += Math.floor(geom.getArea());
+    if (this.checkForSelfIntersect()) {
+      callback({ error: "Geometries are self-intersecting" });
+    } else {
+      this.vectorSource.getFeatures().forEach((feature) => {
+        if (
+          feature.modification === "added" ||
+          feature.modification === "updated"
+        ) {
+          createdFeatures.push(feature);
+          let geom = feature.getGeometry();
+          if (geom.getType() === GeometryType.POLYGON) {
+            totalArea += Math.floor(geom.getArea());
+          }
+          promises.push(this.lookupEstate(estateSource, feature));
         }
-        promises.push(this.lookupEstate(estateSource, feature));
-      }
-    });
+      });
 
-    Promise.all(promises).then((estateCollections) => {
-      if (estateCollections) {
-        estateCollections.forEach((estateCollection) => {
-          estateCollection.features.forEach((estate) => {
-            var parser = new GeoJSON();
-            let estateArea = Math.round(
-              parser.readFeature(estate).getGeometry().getArea()
-            );
-            let affectedArea = 0;
-            createdFeatures.forEach((drawnArea) => {
-              if (drawnArea.getGeometry().getType() === GeometryType.POLYGON) {
-                let interSection = intersect(
-                  parser.writeFeatureObject(drawnArea),
-                  estate
-                );
-                if (interSection) {
-                  let intersectionFeature = parser.readFeature(interSection);
-                  if (
-                    intersectionFeature.getGeometry().getType() ===
-                      GeometryType.POLYGON ||
-                    GeometryType.MULTI_POLYGON
-                  ) {
-                    affectedArea += Math.floor(
-                      intersectionFeature.getGeometry().getArea()
+      let collectionOk = true;
+      Promise.all(promises).then((estateCollections) => {
+        if (estateCollections) {
+          estateCollections.forEach((estateCollection) => {
+            estateCollection.features.forEach((estate) => {
+              var parser = new GeoJSON();
+              let estateArea = Math.round(
+                parser.readFeature(estate).getGeometry().getArea()
+              );
+              let affectedArea = 0;
+              createdFeatures.forEach((drawnArea) => {
+                if (
+                  drawnArea.getGeometry().getType() === GeometryType.POLYGON
+                ) {
+                  try {
+                    let interSection = intersect(
+                      parser.writeFeatureObject(drawnArea),
+                      estate
                     );
+                    if (interSection) {
+                      let intersectionFeature = parser.readFeature(
+                        interSection
+                      );
+                      if (
+                        intersectionFeature.getGeometry().getType() ===
+                          GeometryType.POLYGON ||
+                        GeometryType.MULTI_POLYGON
+                      ) {
+                        affectedArea += Math.floor(
+                          intersectionFeature.getGeometry().getArea()
+                        );
+                      }
+                    }
+                  } catch (error) {
+                    collectionOk = false;
+                    callback({
+                      error: "Geometries are self-intersecting",
+                    });
                   }
+                }
+              });
+              if (affectedArea > 0) {
+                let objIndex = affectedEstates.findIndex(
+                  (obj) => obj.estateName === estate.properties.fastighet
+                );
+                if (objIndex === -1) {
+                  affectedEstates.push({
+                    estateName: estate.properties.fastighet,
+                    estateId: estate.properties.fastnr_fk || "",
+                    estateArea: estateArea,
+                    affectedArea: affectedArea,
+                  });
                 }
               }
             });
-            if (affectedArea > 0) {
-              let objIndex = affectedEstates.findIndex(
-                (obj) => obj.estateName === estate.properties.fastighet
-              );
-              if (objIndex === -1) {
-                affectedEstates.push({
-                  estateName: estate.properties.fastighet,
-                  estateId: estate.properties.fastnr_fk || "",
-                  estateArea: estateArea,
-                  affectedArea: affectedArea,
-                });
-              }
-            }
           });
-        });
-        let result = {
-          operation: this.markisParameters.type,
-          objectId: this.markisParameters.objectId || "",
-          objectSerial: this.markisParameters.objectSerial || "",
-          totalArea: totalArea,
-          affectedEstates: affectedEstates,
-        };
-        if (callback) callback(result);
-      }
-    });
+          let result = {
+            operation: this.markisParameters.type,
+            objectId: this.markisParameters.objectId || "",
+            objectSerial: this.markisParameters.objectSerial || "",
+            totalArea: totalArea,
+            affectedEstates: affectedEstates,
+          };
+          if (collectionOk) callback(result);
+        }
+      });
+    }
   }
 
   invokeCompleteMessage(done) {
     this.getAreaAndAffectedEstates((r) => {
-      let message_string = JSON.stringify(r);
-      this.connection.invoke(
-        "OperationCompleted",
-        this.sessionId,
-        message_string
-      );
-      return done();
+      if (!r.error) {
+        let message_string = JSON.stringify(r);
+        this.connection.invoke(
+          "OperationCompleted",
+          this.sessionId,
+          message_string
+        );
+        return done({ success: "Area calculated without issues." });
+      }
+      return done({ error: "Area could not be calculated correctly." });
     });
   }
 

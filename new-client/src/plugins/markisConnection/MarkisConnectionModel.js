@@ -680,16 +680,21 @@ class MarkisConnectionModel {
                           GeometryType.POLYGON ||
                         GeometryType.MULTI_POLYGON
                       ) {
-                        affectedArea += Math.floor(
-                          intersectionFeature.getGeometry().getArea()
-                        );
+                        try {
+                          let tempArea = intersectionFeature
+                            .getGeometry()
+                            .getArea();
+                          if (tempArea > 1) {
+                            affectedArea += Math.floor(tempArea);
+                          }
+                        } catch (error) {
+                          console.warn(error);
+                        }
                       }
                     }
                   } catch (error) {
+                    console.warn("error: ", error);
                     collectionOk = false;
-                    callback({
-                      error: "Geometries are self-intersecting",
-                    });
                   }
                 }
               });
@@ -715,7 +720,13 @@ class MarkisConnectionModel {
             totalArea: totalArea,
             affectedEstates: affectedEstates,
           };
-          if (collectionOk) callback(result);
+          if (collectionOk) {
+            callback(result);
+          } else {
+            callback({
+              error: "Geometries are self-intersecting",
+            });
+          }
         }
       });
     }

@@ -12,9 +12,10 @@ import ListItemText from "@material-ui/core/ListItemText";
 import Grid from "@material-ui/core/Grid";
 import SentimentVeryDissatisfiedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
 import Paper from "@material-ui/core/Paper";
-import HelpOutlineIcon from "@material-ui/icons/HelpOutline";
+import WarningIcon from "@material-ui/icons/Warning";
 import { IconButton } from "@material-ui/core";
 import Popover from "@material-ui/core/Popover";
+import ThumbUpIcon from "@material-ui/icons/ThumbUp";
 
 const styles = (theme) => ({
   root: {
@@ -112,7 +113,7 @@ class AffectedEstates extends React.Component {
         dif = (result.totalArea - totalEstateArea) / result.totalArea;
       }
 
-      if (dif < 0.1) {
+      if (dif < 0.05) {
         return {
           color: theme.palette.success.main,
           missingArea: result.totalArea - totalEstateArea,
@@ -153,61 +154,93 @@ class AffectedEstates extends React.Component {
     const { theme } = this.props;
     return {
       width: "100%",
-      borderLeft: `${theme.spacing(0.5)}px solid ${this.state.color}`,
+      borderLeft: `${theme.spacing(1.5)}px solid ${this.state.color}`,
     };
   };
 
-  togglePopper = (e) => {
+  togglePopover = (e) => {
     this.setState({
       anchorEl: this.state.anchorEl ? null : e.currentTarget,
     });
   };
 
-  renderHelpIcon = () => {
+  renderWarningIcon = () => {
     return (
-      <Tooltip title="Varför är det orange?">
+      <Tooltip title="Berörda fastigheter verkar saknas i markis">
         <IconButton
           onClick={(e) => {
-            this.togglePopper(e);
+            this.togglePopover(e);
           }}
         >
-          <HelpOutlineIcon />
+          <WarningIcon />
         </IconButton>
       </Tooltip>
     );
   };
 
-  renderPopper = () => {
+  renderCorrectIcon = () => {
+    return (
+      <Tooltip title="Avtalsytorna ser okej ut!">
+        <IconButton
+          onClick={(e) => {
+            this.togglePopover(e);
+          }}
+        >
+          <ThumbUpIcon style={{ color: this.state.color }} fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    );
+  };
+
+  renderInformationText = () => {
+    const { status } = this.state;
+    if (status === "success") {
+      return (
+        <Typography>
+          Avtalsgeometrierna ser bra ut och är redo att sparas! <br /> <br />
+          Bra jobbat!
+        </Typography>
+      );
+    } else if (status === "warning") {
+      return (
+        <Typography>
+          Den sammanlagda arean på de ritade avtalsgeometrierna stämmer ej
+          överens med den totala arean på de berörda fastigheterna. (Differensen
+          är större än 5% av avtalsgeometriernas storlek). <br /> <br />
+          Förmodligen beror detta på att fastigheten saknas i MARKIS. <br />{" "}
+          <br />
+          Försäkra dig om att de ritade avtalsgeometrierna ligger på de
+          fastigheter som du ämnade.
+          <br /> <br />
+          Differensen är beräknad till:{" "}
+          {this.state.missingArea.toLocaleString("sv-SE")} m2.
+        </Typography>
+      );
+    }
+  };
+
+  renderPopover = () => {
     const { theme } = this.props;
+    const { color, anchorEl } = this.state;
     const id = Boolean(this.state.anchorEl) ? "simple-popper" : undefined;
     return (
       <Popover
         id={id}
-        open={Boolean(this.state.anchorEl)}
+        open={Boolean(anchorEl)}
         onClose={(e) => {
-          this.togglePopper(e);
+          this.togglePopover(e);
         }}
-        anchorEl={this.state.anchorEl}
+        anchorEl={anchorEl}
       >
         <Paper
           style={{
-            border: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+            border: `${theme.spacing(0.1)}px solid ${color}`,
             padding: theme.spacing(1),
             maxWidth: 300,
           }}
           elevation={3}
         >
-          <Typography align="center" variant="caption">
-            Den sammanlagda arean på de ritade avtalsgeometrierna stämmer ej
-            överens med den totala arean på de berörda fastigheterna. <br />{" "}
-            <br />
-            Förmodligen beror detta på att fastigheten saknas i MARKIS. <br />{" "}
-            <br />
-            Försäkra dig om att de ritade avtalsgeometrierna ligger på de
-            fastigheter som du ämnade.
-            <br /> <br />
-            Differensen är beräknad till: {this.state.missingArea} m2.
-          </Typography>
+          {this.renderInformationText()}
         </Paper>
       </Popover>
     );
@@ -228,7 +261,9 @@ class AffectedEstates extends React.Component {
           <ListItem
             key={"total"}
             style={{
-              border: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+              borderTop: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+              borderBottom: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+              borderRight: `${theme.spacing(0.1)}px solid ${this.state.color}`,
             }}
             alignItems="flex-start"
           >
@@ -250,7 +285,9 @@ class AffectedEstates extends React.Component {
                 </div>
               }
             ></ListItemText>
-            {this.state.status === "warning" && this.renderHelpIcon()}
+            {this.state.status === "warning"
+              ? this.renderWarningIcon()
+              : this.renderCorrectIcon()}
           </ListItem>
           {contractInformation.affectedEstates.map((estate, index) => {
             return (
@@ -339,7 +376,7 @@ class AffectedEstates extends React.Component {
               {this.renderEstateList()}
             </StyledAccordionDetails>
           </Accordion>
-          {this.renderPopper()}
+          {this.renderPopover()}
         </div>
       );
     } else {

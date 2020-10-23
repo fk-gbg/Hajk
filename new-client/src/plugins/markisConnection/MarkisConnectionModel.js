@@ -28,19 +28,13 @@ class MarkisConnectionModel {
   constructor(settings) {
     this.map = settings.map;
     this.app = settings.app;
+    this.options = settings.options;
     this.localObserver = settings.localObserver;
-    this.globalObserver = settings.globalObserver;
-    this.hubUrl = settings.options.hubUrl;
     this.isConnected = false;
-    this.sources = settings.options.sources;
-    this.estateSource = settings.options.estateSource;
-    this.wfstSources = settings.options.wfstSources;
     this.promptForAttributes = false;
     this.geometriesExist = false;
     this.featureModified = false;
     this.editingExisting = false;
-    this.layerNames = settings.options.layerNames;
-    this.displayConnections = settings.options.displayConnections;
     this.type = "Polygon";
     this.markisParameters = {};
     this.featureIdCounter = 1;
@@ -59,7 +53,7 @@ class MarkisConnectionModel {
   }
 
   setEditLayer(layerName) {
-    this.editSource = this.wfstSources.find(
+    this.editSource = this.options.wfstSources.find(
       (wfstSource) => wfstSource.layers[0] === layerName
     );
     this.promptForAttributes = this.editSource.editableFields.length > 0;
@@ -74,57 +68,29 @@ class MarkisConnectionModel {
     this.map.addLayer(this.editLayer);
   }
 
-  getLayer(layerName) {
-    var foundLayer = this.map
-      .getLayers()
-      .getArray()
-      .find((layer) => {
-        var match = false;
-        if (layer.getSource().getParams) {
-          let params = layer.getSource().getParams();
-          if (typeof params === "object") {
-            let paramName = params.LAYERS.split(":");
-            let layerSplit = layerName.split(":");
-            if (paramName.length === 2 && layerSplit.length === 2) {
-              match = layerName === params.LAYERS;
-            }
-            if (paramName.length === 1) {
-              match = layerSplit[1] === params.LAYERS;
-            }
-          }
+  refreshLayersByIds = (layerIds) => {
+    let layers = this.getLayersByIds(layerIds);
+
+    if (layers && layers.length > 0) {
+      layers.forEach((layer) => {
+        if (layer instanceof Vector) {
+          layer.getSource().refresh({ force: true });
+        } else {
+          const source = layer.getSource();
+          source.changed();
+          source.updateParams({ time: Date.now() });
+          this.map.updateSize();
         }
-        return match;
       });
-    if (foundLayer) {
-      return foundLayer;
     }
-  }
-
-  toggleLayerVisibility(layerNames, visible) {
-    layerNames.forEach((layerName) => {
-      const foundLayer = this.getLayer(layerName);
-      if (foundLayer) {
-        foundLayer.setProperties({ visible: visible });
-      }
-    });
-  }
-
-  refreshLayer(layerName) {
-    const foundLayer = this.getLayer(layerName);
-    if (foundLayer) {
-      const source = foundLayer.getSource();
-      source.changed();
-      source.updateParams({ time: Date.now() });
-      this.map.updateSize();
-    }
-  }
+  };
 
   /**Returns the data source connected to the prefix of the contract ID */
   getContractSource() {
     const prefix = this.markisParameters.objectId.slice(0, 2).toUpperCase();
-    for (var i = 0; i < this.wfstSources.length; i++) {
-      if (this.wfstSources[i].prefixes.indexOf(prefix) > -1) {
-        return this.wfstSources[i].layers[0];
+    for (var i = 0; i < this.options.wfstSources.length; i++) {
+      if (this.options.wfstSources[i].prefixes.indexOf(prefix) > -1) {
+        return this.options.wfstSources[i].layers[0];
       }
     }
   }
@@ -465,7 +431,7 @@ class MarkisConnectionModel {
     this.searchResultLayer.getSource().clear();
     this.removeInteraction();
     if (this.sourceName && this.markisParameters.userMode === "Show") {
-      this.toggleLayerVisibility([this.sourceName], false);
+      this.toggleLayerById([this.editSource.activeLayers], false);
     }
     Object.assign(this.markisParameters, {
       objectId: undefined,
@@ -631,8 +597,8 @@ class MarkisConnectionModel {
     let totalArea = 0;
     let promises = [];
     let createdFeatures = [];
-    const estateSource = this.sources.find(
-      (source) => source.layers[0] === this.estateSource
+    const estateSource = this.options.sources.find(
+      (source) => source.layers[0] === this.options.estateSource
     );
 
     if (this.checkForSelfIntersect()) {
@@ -750,7 +716,7 @@ class MarkisConnectionModel {
   connectToHub(sessionId) {
     this.sessionId = sessionId;
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(this.hubUrl + "?sid=" + sessionId + "")
+      .withUrl(this.options.hubUrl + "?sid=" + sessionId + "")
       .build();
 
     this.connection
@@ -808,15 +774,12 @@ class MarkisConnectionModel {
         );
         if (validationResult[0]) {
           this.assignMessageParameters(showEstateObj);
-          const estateSource = this.sources.find(
-            (source) => source.layers[0] === this.estateSource
+          const estateSource = this.options.sources.find(
+            (source) => source.layers[0] === this.options.estateSource
           );
           this.localObserver.publish("show-existing-contract", {});
           this.doSearch(showEstateObj.objectId, estateSource);
-          this.toggleLayerVisibility(
-            [this.layerNames["estateLayerName"]],
-            true
-          );
+          this.toggleLayerById([this.options.estateLayerId], true);
         } else {
           this.publishMessage(validationResult[1], "error", true);
         }
@@ -838,17 +801,14 @@ class MarkisConnectionModel {
         );
         if (validationResult[0]) {
           this.assignMessageParameters(showLongLeaseObj);
-          const longLeaseSource = this.sources.find(
+          const longLeaseSource = this.options.sources.find(
             (source) =>
-              source.layers[0] === this.layerNames["longLeaseLayerName"]
+              source.layers[0] === this.options.layerNames["longLeaseLayerName"]
           );
 
           this.localObserver.publish("show-existing-contract", {});
           this.doSearch(showLongLeaseObj.objectId, longLeaseSource);
-          this.toggleLayerVisibility(
-            [this.layerNames["longLeaseLayerName"]],
-            true
-          );
+          this.toggleLayerById([this.options.longLeaseLayerId], true);
         } else {
           this.publishMessage(validationResult[1], "error", true);
         }
@@ -870,11 +830,11 @@ class MarkisConnectionModel {
         );
         if (validationResult[0]) {
           this.assignMessageParameters(createPurchaseObj);
-          this.sourceName = this.layerNames["purchaseLayerName"];
+          this.sourceName = this.options.layerNames["purchaseLayerName"];
           this.setEditLayer(this.sourceName);
           this.searchResultLayer.getSource().clear();
           this.localObserver.publish("create-contract", {});
-          this.toggleLayerVisibility([this.sourceName], true);
+          this.toggleLayerById([this.editSource.activeLayers], true);
         } else {
           this.publishMessage(validationResult[1], "error", true);
         }
@@ -896,11 +856,11 @@ class MarkisConnectionModel {
         );
         if (validationResult[0]) {
           this.assignMessageParameters(createSaleObj);
-          this.sourceName = this.layerNames["saleLayerName"];
+          this.sourceName = this.options.layerNames["saleLayerName"];
           this.setEditLayer(this.sourceName);
           this.searchResultLayer.getSource().clear();
           this.localObserver.publish("create-contract", {});
-          this.toggleLayerVisibility([this.sourceName], true);
+          this.toggleLayerById([this.editSource.activeLayers], true);
         } else {
           this.publishMessage(validationResult[1], "error", true);
         }
@@ -981,16 +941,31 @@ class MarkisConnectionModel {
     }
   }
 
+  getLayersByIds = (layerIds) => {
+    return this.map
+      .getLayers()
+      .getArray()
+      .filter((layer) => {
+        return layerIds.indexOf(layer.values_.name) > -1;
+      });
+  };
+
+  toggleLayerById = (layerIds, visible) => {
+    let layers = this.getLayersByIds(layerIds);
+    if (layers && layers.length > 0) {
+      layers.forEach((layer) => {
+        layer.setProperties({ visible: visible });
+      });
+    }
+  };
+
   /**Enables creation of contract geometries. Sets the editlayer etc. */
   enableContractCreation(createObject, existingGeom) {
     this.searchResultLayer.getSource().clear();
     this.sourceName = this.getContractSource();
-    this.toggleLayerVisibility(
-      [this.layerNames["estateLayerName"], this.sourceName],
-      true
-    );
     if (this.sourceName) {
       this.setEditLayer(this.sourceName);
+      this.toggleLayerById(this.editSource.activeLayers, true);
       if (existingGeom) {
         this.geometriesExist = true;
         this.editingExisting = true;
@@ -1122,7 +1097,7 @@ class MarkisConnectionModel {
         promises.push(promise);
         this.controllers.push(controller);
       } else {
-        this.sources.forEach((source) => {
+        this.options.sources.forEach((source) => {
           const { promise, controller } = this.lookUp(source, searchInput);
           promises.push(promise);
           this.controllers.push(controller);
@@ -1136,10 +1111,10 @@ class MarkisConnectionModel {
                 if (jsonResult.features.length > 0) {
                   arraySort({
                     array: jsonResult.features,
-                    index: this.sources[i].searchFields[0],
+                    index: this.options.sources[i].searchFields[0],
                   });
                 }
-                jsonResult.source = this.sources[i];
+                jsonResult.source = this.options.sources[i];
               });
               jsonResults = jsonResults.filter(function (e) {
                 return e.features.length > 0;
@@ -1161,7 +1136,7 @@ class MarkisConnectionModel {
       const numHits = this.getNumberOfResults(d);
       if (numHits < 1) {
         this.publishMessage(
-          `${v} returnerade inga ${this.displayConnections[
+          `${v} returnerade inga ${this.options.displayConnections[
             this.markisParameters.type
           ].toLowerCase()}.`,
           "error",
@@ -1172,7 +1147,7 @@ class MarkisConnectionModel {
         this.highlightImpact(d);
         this.publishMessage(
           `${
-            this.displayConnections[this.markisParameters.type]
+            this.options.displayConnections[this.markisParameters.type]
           } kopplade till ${v} är markerade i rött.`,
           "success",
           false

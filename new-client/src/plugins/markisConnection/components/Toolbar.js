@@ -167,7 +167,7 @@ class Toolbar extends React.Component {
                 "Geometrin skapades utan problem!",
                 "success"
               );
-              model.refreshLayer(model.sourceName);
+              model.refreshLayersByIds(model.editSource.activeLayers);
               this.props.panel.reset();
             } else if (
               Number(
@@ -178,7 +178,7 @@ class Toolbar extends React.Component {
                 "Geometrin uppdaterades utan problem!",
                 "success"
               );
-              model.refreshLayer(model.sourceName);
+              model.refreshLayersByIds(model.editSource.activeLayers);
               this.props.panel.reset();
             } else if (
               Number(
@@ -189,7 +189,7 @@ class Toolbar extends React.Component {
                 "Geometrin togs bort utan problem.",
                 "success"
               );
-              model.refreshLayer(model.sourceName);
+              model.refreshLayersByIds(model.editSource.activeLayers);
               this.props.panel.reset();
             } else {
               this.props.messageHandler(

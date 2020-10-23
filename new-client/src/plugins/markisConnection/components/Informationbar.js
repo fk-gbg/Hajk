@@ -39,7 +39,7 @@ class Informationbar extends React.Component {
       return (
         <div>
           <Chip
-            label={`Skapar ${model.displayConnections[
+            label={`Skapar ${model.options.displayConnections[
               this.props.type
             ].toLowerCase()}`}
             color="primary"
@@ -51,7 +51,8 @@ class Informationbar extends React.Component {
     } else if (this.props.userMode === "Show" && this.props.objectId) {
       return (
         <Typography>
-          Du visar nu {model.displayConnections[this.props.type].toLowerCase()}{" "}
+          Du visar nu{" "}
+          {model.options.displayConnections[this.props.type].toLowerCase()}{" "}
           kopplade till:
           <br />
           <b>{this.props.objectId}</b>
@@ -63,7 +64,8 @@ class Informationbar extends React.Component {
     ) {
       return (
         <Typography>
-          Du visar nu {model.displayConnections[this.props.type].toLowerCase()}{" "}
+          Du visar nu{" "}
+          {model.options.displayConnections[this.props.type].toLowerCase()}{" "}
           kopplade till:
           <br />
           <b>{this.props.objectId}</b>

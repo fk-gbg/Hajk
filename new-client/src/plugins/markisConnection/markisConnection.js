@@ -23,13 +23,10 @@ class MarkisConnection extends React.PureComponent {
     this.sessionId = this.getUrlParams("sid");
 
     this.localObserver.subscribe("create-contract", (message) => {
-      window.localStorage.setItem("drawerPermanent", true);
-
       this.props.app.globalObserver.publish(
         "core.drawerContentChanged",
         "markisconnection"
       );
-      this.props.app.globalObserver.publish("core.drawerToggled");
     });
 
     this.MarkisConnectionModel = new MarkisConnectionModel({
@@ -41,7 +38,6 @@ class MarkisConnection extends React.PureComponent {
   }
 
   getUrlParams(name) {
-    console.log(window.localStorage.getItem("activeDrawerContent"));
     var match = RegExp("[?&]" + name + "=([^&]*)").exec(window.location.search);
     return match && decodeURIComponent(match[1].replace(/\+/g, " "));
   }
@@ -54,17 +50,19 @@ class MarkisConnection extends React.PureComponent {
     } else {
       if (
         window.localStorage.getItem("activeDrawerContent") ===
-          "markisconnection" &&
-        !window.localStorage.getItem("drawerPermanent")
+        "markisconnection"
       ) {
-        window.localStorage.removeItem("activeDrawerContent");
-        this.props.app.globalObserver.publish("core.hideDrawer");
-      } else if (
-        window.localStorage.getItem("activeDrawerContent") ===
-          "markisconnection" &&
-        window.localStorage.getItem("drawerPermanent")
-      ) {
-        window.localStorage.setItem("activeDrawerContent", "plugins");
+        if (window.localStorage.getItem("drawerPermanent") === "true") {
+          this.props.app.globalObserver.publish(
+            "core.drawerContentChanged",
+            "plugins"
+          );
+        } else {
+          this.props.app.globalObserver.publish(
+            "core.drawerContentChanged",
+            null
+          );
+        }
       }
     }
   }

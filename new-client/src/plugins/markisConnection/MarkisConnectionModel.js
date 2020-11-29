@@ -834,7 +834,7 @@ class MarkisConnectionModel {
           this.setEditLayer(this.sourceName);
           this.searchResultLayer.getSource().clear();
           this.localObserver.publish("create-contract", {});
-          this.toggleLayerById([this.editSource.activeLayers], true);
+          this.toggleLayerById(this.editSource.activeLayers, true);
         } else {
           this.publishMessage(validationResult[1], "error", true);
         }
@@ -860,7 +860,7 @@ class MarkisConnectionModel {
           this.setEditLayer(this.sourceName);
           this.searchResultLayer.getSource().clear();
           this.localObserver.publish("create-contract", {});
-          this.toggleLayerById([this.editSource.activeLayers], true);
+          this.toggleLayerById(this.editSource.activeLayers, true);
         } else {
           this.publishMessage(validationResult[1], "error", true);
         }

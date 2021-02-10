@@ -11,8 +11,7 @@ import Observer from "react-event-observer";
 const styles = (theme) => ({
   root: {
     backgroundColor: theme.palette.background.default,
-    maxHeight: "80vh",
-    overflow: "hidden",
+    overflowX: "hidden",
   },
 });
 class MarkisConnection extends React.PureComponent {

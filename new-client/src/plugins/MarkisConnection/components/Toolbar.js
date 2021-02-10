@@ -45,9 +45,8 @@ const styles = (theme) => ({
     justifyContent: "left",
   },
   centerElements: {
+    paddingTop: theme.spacing(4),
     textAlign: "center",
-    position: "absolute",
-    bottom: theme.spacing(1),
     width: "100%",
   },
   toolIcons: {

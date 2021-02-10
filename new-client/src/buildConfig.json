@@ -9,13 +9,13 @@
     "Edit",
     "Export",
     "Informative",
-    "Layerswitcher",
+    "LayerSwitcher",
     "Location",
     "Measure",
     "Print",
     "Routing",
     "Search",
-    "Streetview",
+    "StreetView",
     "MarkisConnection"
   ],
   "allTools": [
@@ -37,6 +37,6 @@
     "Search",
     "StreetView",
     "Suggest",
-    "Markisconnection"
+    "MarkisConnection"
   ]
 }

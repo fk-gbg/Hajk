@@ -33,7 +33,7 @@ const styles = (theme) => ({
 const StyledAccordionSummary = withStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.background.default,
-    borderBottom: `1px solid ${theme.palette.divider}`,
+    borderTop: `1px solid ${theme.palette.divider}`,
     color: theme.palette.text.secondary,
     padding: theme.spacing(1),
     marginBottom: 0,
@@ -362,7 +362,7 @@ class AffectedEstates extends React.Component {
     ) {
       return (
         <div style={this.getAccordionStyle()}>
-          <Accordion>
+          <Accordion elevation={0}>
             <Tooltip title="Klicka här för att se vilka (och till hur stor area) fastigheter som avtalsytorna påverkar.">
               <StyledAccordionSummary
                 expandIcon={<ExpandMoreIcon />}

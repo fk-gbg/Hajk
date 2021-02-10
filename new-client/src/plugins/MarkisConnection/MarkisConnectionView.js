@@ -103,6 +103,12 @@ class MarkisConnectionView extends React.Component {
           />
         </div>
         <div>
+          <AffectedEstates
+            model={this.props.model}
+            localObserver={this.props.localObserver}
+          ></AffectedEstates>
+        </div>
+        <div>
           <Toolbar
             model={this.props.model}
             observer={this.props.localObserver}
@@ -111,12 +117,6 @@ class MarkisConnectionView extends React.Component {
             userMode={this.state.userMode}
             type={this.state.type}
           />
-        </div>
-        <div>
-          <AffectedEstates
-            model={this.props.model}
-            localObserver={this.props.localObserver}
-          ></AffectedEstates>
         </div>
         <div>
           <AttributeEditor

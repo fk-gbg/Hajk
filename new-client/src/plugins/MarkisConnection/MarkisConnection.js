@@ -22,6 +22,10 @@ class MarkisConnection extends React.PureComponent {
 
     this.sessionId = this.getUrlParams("sid");
 
+    if (this.sessionId) {
+      this.addDrawerToggleButton();
+    }
+
     this.localObserver.subscribe("create-contract", (message) => {
       this.props.app.globalObserver.publish(
         "core.drawerContentChanged",
@@ -86,17 +90,14 @@ class MarkisConnection extends React.PureComponent {
       value: "markisconnection",
       ButtonIcon: DesktopWindowsIcon,
       caption: "Markiskoppling",
+      drawerTitle: "Markiskoppling",
       order: 100,
       renderDrawerContent: this.renderDrawerContent,
     });
   };
 
   render() {
-    if (this.sessionId) {
-      return <>{this.addDrawerToggleButton()}</>;
-    } else {
-      return <></>;
-    }
+    return null;
   }
 }
 

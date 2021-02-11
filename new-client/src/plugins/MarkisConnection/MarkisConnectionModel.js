@@ -22,6 +22,7 @@ import {
   getSketchStyle,
   getHighlightStyle,
   getHiddenStyle,
+  getStyleFromValues,
 } from "./utils/FeatureStyle.js";
 
 class MarkisConnectionModel {
@@ -42,6 +43,7 @@ class MarkisConnectionModel {
     this.geometryName = "geom";
     this.wfsParser = new WFS();
     this.controllers = [];
+    this.userSelectedStyle = null;
     this.vectorSource = new VectorSource({});
     this.searchResultLayer = new VectorLayer({
       source: new VectorSource({}),
@@ -155,7 +157,7 @@ class MarkisConnectionModel {
     this.draw = new Draw({
       source: this.vectorSource,
       type: this.type,
-      style: getSketchStyle(),
+      style: this.userSelectedStyle ?? getSketchStyle(),
       geometryName: this.geometryName,
     });
 
@@ -235,10 +237,30 @@ class MarkisConnectionModel {
     });
   };
 
+  updateFeatureStyle = (strokeColor, fillColor, strokeWidth) => {
+    const style = getStyleFromValues(strokeColor, fillColor, strokeWidth);
+    this.userSelectedStyle = style;
+    if (this.markisParameters.userMode === "Show") {
+      this.searchResultLayer
+        .getSource()
+        .getFeatures()
+        .forEach((feature) => {
+          feature.setStyle(style);
+        });
+    } else {
+      this.vectorSource.forEachFeature((feature) => {
+        this.editLayer.setStyle(style);
+        if (feature.modification && feature.modification !== "removed") {
+          feature.setStyle(style);
+        }
+      });
+    }
+  };
+
   removeHighlight() {
     this.vectorSource.getFeatures().forEach((feature) => {
       if (feature.modification && feature.modification !== "removed") {
-        feature.setStyle(getSketchStyle);
+        feature.setStyle(this.userSelectedStyle ?? getSketchStyle);
       }
     });
   }

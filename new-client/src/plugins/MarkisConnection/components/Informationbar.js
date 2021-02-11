@@ -2,6 +2,7 @@ import React from "react";
 import Typography from "@material-ui/core/Typography";
 import Chip from "@material-ui/core/Chip";
 import { withStyles } from "@material-ui/core/styles";
+import FeatureStyleChanger from "./FeatureStyleChanger";
 
 const styles = (theme) => ({
   chip: {
@@ -30,6 +31,7 @@ class Informationbar extends React.Component {
             className={classes.chip}
             variant="outlined"
           />
+          <FeatureStyleChanger model={model} />
         </div>
       );
     } else if (
@@ -46,30 +48,37 @@ class Informationbar extends React.Component {
             className={classes.chip}
             variant="outlined"
           />
+          <FeatureStyleChanger model={model} />
         </div>
       );
     } else if (this.props.userMode === "Show" && this.props.objectId) {
       return (
-        <Typography>
-          Du visar nu{" "}
-          {model.options.displayConnections[this.props.type].toLowerCase()}{" "}
-          kopplade till:
-          <br />
-          <b>{this.props.objectId}</b>
-        </Typography>
+        <div>
+          <Typography>
+            Du visar nu{" "}
+            {model.options.displayConnections[this.props.type].toLowerCase()}{" "}
+            kopplade till:
+            <br />
+            <b>{this.props.objectId}</b>
+          </Typography>
+          <FeatureStyleChanger model={model} />
+        </div>
       );
     } else if (
       this.props.model.promptForAttributes &&
       this.props.model.editFeatureId
     ) {
       return (
-        <Typography>
-          Du visar nu{" "}
-          {model.options.displayConnections[this.props.type].toLowerCase()}{" "}
-          kopplade till:
-          <br />
-          <b>{this.props.objectId}</b>
-        </Typography>
+        <div>
+          <Typography>
+            Du visar nu{" "}
+            {model.options.displayConnections[this.props.type].toLowerCase()}{" "}
+            kopplade till:
+            <br />
+            <b>{this.props.objectId}</b>
+          </Typography>
+          <FeatureStyleChanger model={model} />
+        </div>
       );
     } else {
       return (

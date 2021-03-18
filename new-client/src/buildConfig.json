@@ -1,6 +1,7 @@
 {
   "activeTools": [
     "Anchor",
+    "Bookmarks",
     "Buffer",
     "Collector",
     "Coordinates",
@@ -17,9 +18,11 @@
     "Search",
     "StreetView",
     "MarkisConnection"
+    "Suggest"
   ],
   "allTools": [
     "Anchor",
+    "Bookmarks",
     "Buffer",
     "Collector",
     "Coordinates",
@@ -27,7 +30,7 @@
     "Draw",
     "Dummy",
     "Edit",
-    "FBService",
+    "Export",
     "Informative",
     "LayerSwitcher",
     "Location",

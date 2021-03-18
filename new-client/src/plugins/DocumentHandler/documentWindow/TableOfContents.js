@@ -8,38 +8,37 @@ import {
   List,
   ListItem,
   ListItemText,
-  Typography,
+  Button,
   Collapse,
 } from "@material-ui/core";
 
 const styles = (theme) => {
   return {
     tableOfContents: {
-      backgroundColor: theme.palette.grey[200],
+      backgroundColor: theme.palette.action.selected,
       cursor: "pointer",
       paddingLeft: theme.spacing(2),
       paddingRight: theme.spacing(2),
       paddingTop: theme.spacing(1),
       paddingBottom: theme.spacing(1),
     },
+
+    focusBackground: {
+      backgroundColor: theme.palette.action.selected,
+    },
+
     collapseContainer: {
       width: "100%",
     },
-    listItemText: {
-      "&:hover": {
-        backgroundColor: theme.palette.grey[300],
-      },
-    },
+
     root: {
       width: "100%",
       padding: theme.spacing(0),
-      backgroundColor: theme.palette.grey[200],
     },
   };
 };
 
 function NestedListItemRaw(props) {
-  const { classes } = props;
   return (
     <ListItem
       component="li"
@@ -53,9 +52,7 @@ function NestedListItemRaw(props) {
         paddingLeft: props.theme.spacing(props.level * 3),
       }}
     >
-      <ListItemText className={classes.listItemText}>
-        {props.children}
-      </ListItemText>
+      <ListItemText>{props.children}</ListItemText>
     </ListItem>
   );
 }
@@ -153,25 +150,26 @@ class TableOfContents extends React.PureComponent {
 
     return (
       <Grid className={classes.tableOfContents} container>
-        <Grid
-          onClick={toggleCollapse}
-          xs={12}
-          alignItems="center"
-          justify="space-between"
-          container
-          item
-        >
-          <Grid item>
-            <Typography variant="h2">{title}</Typography>
-          </Grid>
-          <Grid item>
-            {expanded ? (
+        <Button
+          disableRipple
+          focusVisibleClassName={classes.focusBackground}
+          style={{
+            paddingLeft: "0px",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+          fullWidth
+          endIcon={
+            expanded ? (
               <ExpandLessIcon></ExpandLessIcon>
             ) : (
               <ExpandMoreIcon></ExpandMoreIcon>
-            )}
-          </Grid>
-        </Grid>
+            )
+          }
+          onClick={toggleCollapse}
+        >
+          {title}
+        </Button>
         <Collapse
           className={classes.collapseContainer}
           in={expanded}

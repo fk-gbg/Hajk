@@ -47,18 +47,22 @@ class DocumentHandler extends React.PureComponent {
         map: props.map,
         menu: props.options.menuConfig.menu,
         resolveSearchInterface: resolve,
+        options: props.options,
       })
         .init()
         .then((loadedDocumentModel) => {
-          this.fetchCustomThemeJson().then((customTheme) => {
-            this.setState({
-              model: loadedDocumentModel,
-              customTheme: customTheme,
-            });
+          return this.fetchCustomThemeJson().then((customTheme) => {
+            this.setState(
+              {
+                model: loadedDocumentModel,
+                customTheme: customTheme,
+              },
+              () => {
+                this.addDrawerToggleButton();
+              }
+            );
           });
         });
-
-      this.addDrawerToggleButton();
     });
   }
 
@@ -81,8 +85,19 @@ class DocumentHandler extends React.PureComponent {
     });
   };
 
+  warnNoCustomThemeUrl = () => {
+    console.warn(
+      "Could not find valid url for custom theme in documenthandler, check customThemeUrl"
+    );
+  };
+
   fetchCustomThemeJson = () => {
     const { options } = this.props;
+
+    if (!options.customThemeUrl) {
+      this.warnNoCustomThemeUrl();
+      return Promise.resolve("");
+    }
     return fetch(options.customThemeUrl, fetchOpts)
       .then((res) => {
         return res.json().then((documentHandlerTheme) => {
@@ -95,27 +110,29 @@ class DocumentHandler extends React.PureComponent {
         });
       })
       .catch(() => {
-        console.warn(
-          "Could not find custom theme for documenthandler, check customThemeUrl"
-        );
+        this.warnNoCustomThemeUrl();
         return null;
       });
   };
 
-  dynamicallyImportOpenSans = () => {
+  dynamicallyImportCustomFont = () => {
     const { dynamicImportUrls } = this.props.options;
-    return (
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href={dynamicImportUrls.openSans}
-      />
-    );
+    if (dynamicImportUrls.customFont) {
+      return (
+        <link
+          rel="stylesheet"
+          type="text/css"
+          href={dynamicImportUrls.customFont}
+        />
+      );
+    } else return null;
   };
 
   dynamicallyImportIconFonts = () => {
     const { dynamicImportUrls } = this.props.options;
-    return <link rel="stylesheet" href={dynamicImportUrls.iconFonts} />;
+    if (dynamicImportUrls.iconFonts) {
+      return <link rel="stylesheet" href={dynamicImportUrls.iconFonts} />;
+    } else return null;
   };
 
   renderDrawerContent = () => {
@@ -135,7 +152,7 @@ class DocumentHandler extends React.PureComponent {
   addDrawerToggleButton = () => {
     const { app, options } = this.props;
     app.globalObserver.publish("core.addSrShortcuts", [
-      { title: "Till huvudmeny för webbplatsen", link: "#menu" },
+      { title: "Till huvudmeny för webbplatsen", link: "#panelmenu" },
     ]);
     app.globalObserver.publish("core.addDrawerToggleButton", {
       value: "menu",
@@ -203,7 +220,7 @@ class DocumentHandler extends React.PureComponent {
   render() {
     return (
       <>
-        {this.dynamicallyImportOpenSans()}
+        {this.dynamicallyImportCustomFont()}
         {this.dynamicallyImportIconFonts()}
         <DocumentWindowBase
           {...this.props}

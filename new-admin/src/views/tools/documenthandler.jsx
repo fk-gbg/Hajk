@@ -26,8 +26,6 @@ var defaultState = {
   abstract: "Läs mer om vad som planeras i kommunen",
   caption: "Översiktsplan",
   html: "<div>HTML som beskriver dokumentets innehåll</div>",
-  serviceUrl: "http://localhost:55630/documenthandler/load",
-  exportUrl: "http://localhost:55630/export/document",
   exportRoot: "",
   documentList: [],
   document: "",
@@ -39,7 +37,7 @@ var defaultState = {
   showScrollButtonLimit: 400,
   dynamicImportUrls: {
     iconFonts: "https://fonts.googleapis.com/icon?family=Material+Icons",
-    openSans: "https://fonts.googleapis.com/css?family=Open+Sans",
+    customFont: "https://fonts.googleapis.com/css?family=Open+Sans",
   },
   iconLibraryLink: "https://material.io/resources/icons/?style=baseline",
   width: 600,

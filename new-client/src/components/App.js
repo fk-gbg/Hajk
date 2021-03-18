@@ -84,6 +84,9 @@ const styles = (theme) => {
         pointerEvents: "auto",
       },
     },
+    drawerContent: {
+      height: "inherit",
+    },
     header: {
       zIndex: theme.zIndex.appBar,
       maxHeight: theme.spacing(8),
@@ -143,8 +146,9 @@ const styles = (theme) => {
       justifyContent: "space-between",
       backgroundColor: theme.palette.background.paper,
     },
-    drawerContent: {
+    drawerContentContainer: {
       backgroundColor: theme.palette.background.paper,
+      height: "100%",
       overflow: "auto",
     },
     logoBox: {
@@ -579,9 +583,10 @@ class App extends React.PureComponent {
     const { classes } = this.props;
 
     return (
-      <div id="drawer-content" className={classes.drawerContent}>
+      <div id="drawer-content" className={classes.drawerContentContainer}>
         <Box
           key="plugins"
+          className={classes.drawerContent}
           display={
             this.state.activeDrawerContent === "plugins" ? "unset" : "none"
           }
@@ -592,6 +597,7 @@ class App extends React.PureComponent {
           return (
             <Box
               key={db.value}
+              className={classes.drawerContent}
               display={
                 this.state.activeDrawerContent === db.value ? "unset" : "none"
               }
@@ -609,6 +615,8 @@ class App extends React.PureComponent {
 
     // If clean===true, some components won't be rendered below
     const clean = config.mapConfig.map.clean;
+    const showMapSwitcher =
+      clean === false && config.activeMap !== "simpleMapConfig";
     const showCookieNotice =
       config.mapConfig.map.showCookieNotice !== undefined
         ? config.mapConfig.map.showCookieNotice
@@ -708,7 +716,7 @@ class App extends React.PureComponent {
                 <Zoom map={this.appModel.getMap()} />
                 <div id="plugin-control-buttons"></div>
                 <Rotate map={this.appModel.getMap()} />
-                {clean === false && <MapSwitcher appModel={this.appModel} />}
+                {showMapSwitcher && <MapSwitcher appModel={this.appModel} />}
                 {clean === false && <MapCleaner appModel={this.appModel} />}
                 {clean === false && <PresetLinks appModel={this.appModel} />}
                 {clean === false && (

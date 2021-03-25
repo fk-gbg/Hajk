@@ -17,7 +17,7 @@
     "Routing",
     "Search",
     "StreetView",
-    "MarkisConnection"
+    "MarkisConnection",
     "Suggest"
   ],
   "allTools": [

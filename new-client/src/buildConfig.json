@@ -5,6 +5,7 @@
     "Buffer",
     "Collector",
     "Coordinates",
+    "DocumentHandler",
     "Draw",
     "Dummy",
     "Edit",

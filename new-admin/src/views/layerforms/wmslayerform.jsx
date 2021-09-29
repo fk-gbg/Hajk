@@ -1,25 +1,3 @@
-// Copyright (C) 2016 Göteborgs Stad
-//
-// Denna programvara är fri mjukvara: den är tillåten att distribuera och modifiera
-// under villkoren för licensen CC-BY-NC-SA 4.0.
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the CC-BY-NC-SA 4.0 licence.
-//
-// http://creativecommons.org/licenses/by-nc-sa/4.0/
-//
-// Det är fritt att dela och anpassa programvaran för valfritt syfte
-// med förbehåll att följande villkor följs:
-// * Copyright till upphovsmannen inte modifieras.
-// * Programvaran används i icke-kommersiellt syfte.
-// * Licenstypen inte modifieras.
-//
-// Den här programvaran är öppen i syfte att den skall vara till nytta för andra
-// men UTAN NÅGRA GARANTIER; även utan underförstådd garanti för
-// SÄLJBARHET eller LÄMPLIGHET FÖR ETT VISST SYFTE.
-//
-// https://github.com/hajkmap/Hajk
-
 import React from "react";
 import { Component } from "react";
 import $ from "jquery";
@@ -55,17 +33,15 @@ const defaultState = {
   drawOrder: 1,
   layerType: "WMS",
   attribution: "",
-  searchUrl: "",
-  searchPropertyName: "",
-  searchDisplayName: "",
-  searchOutputFormat: "",
-  searchGeometryField: "",
   infoVisible: false,
   infoTitle: "",
   infoText: "",
   infoUrl: "",
   infoUrlText: "",
   infoOwner: "",
+  timeSliderVisible: false,
+  timeSliderStart: "",
+  timeSliderEnd: "",
   solpopup: solpop,
   capabilitiesList: [],
   version: "1.1.0",
@@ -355,8 +331,8 @@ class WMSLayerForm extends Component {
     });
 
     let styles = layerInfo.styles
-      ? layerInfo.styles.map((style) => (
-          <option key={"style_" + style.Name} value={style.Name}>
+      ? layerInfo.styles.map((style, i) => (
+          <option key={`style_${style.Name}_${i}`} value={style.Name}>
             {style.Name}
           </option>
         ))
@@ -435,11 +411,8 @@ class WMSLayerForm extends Component {
                 () => {
                   this.validateField("select-layers-info-legend-icon");
                   let addedLayersInfo = this.state.addedLayersInfo;
-                  addedLayersInfo[
-                    layerInfo.id
-                  ].legendIcon = this.props.model.get(
-                    "select-layers-info-legend-icon"
-                  );
+                  addedLayersInfo[layerInfo.id].legendIcon =
+                    this.props.model.get("select-layers-info-legend-icon");
                   this.setState(
                     {
                       addedLayersInfo: addedLayersInfo,
@@ -496,6 +469,110 @@ class WMSLayerForm extends Component {
             onChange={(e) => {
               let addedLayersInfo = this.state.addedLayersInfo;
               addedLayersInfo[layerInfo.id].queryable = e.target.checked;
+              this.setState(
+                {
+                  addedLayersInfo: addedLayersInfo,
+                },
+                () => {
+                  this.renderLayerInfoDialog(layerInfo);
+                }
+              );
+            }}
+          />
+        </div>
+
+        <div className="separator">Sökning</div>
+
+        <div>
+          <label>Url</label>
+          <input
+            style={{ marginRight: "5px" }}
+            type="text"
+            value={layerInfo.searchUrl}
+            onChange={(e) => {
+              let addedLayersInfo = this.state.addedLayersInfo;
+              addedLayersInfo[layerInfo.id].searchUrl = e.target.value;
+              this.setState(
+                {
+                  addedLayersInfo: addedLayersInfo,
+                },
+                () => {
+                  this.renderLayerInfoDialog(layerInfo);
+                }
+              );
+            }}
+          />
+        </div>
+        <div>
+          <label>Sökfält</label>
+          <input
+            style={{ marginRight: "5px" }}
+            type="text"
+            value={layerInfo.searchPropertyName}
+            onChange={(e) => {
+              let addedLayersInfo = this.state.addedLayersInfo;
+              addedLayersInfo[layerInfo.id].searchPropertyName = e.target.value;
+              this.setState(
+                {
+                  addedLayersInfo: addedLayersInfo,
+                },
+                () => {
+                  this.renderLayerInfoDialog(layerInfo);
+                }
+              );
+            }}
+          />
+        </div>
+        <div>
+          <label>Visningsfält</label>
+          <input
+            style={{ marginRight: "5px" }}
+            type="text"
+            value={layerInfo.searchDisplayName}
+            onChange={(e) => {
+              let addedLayersInfo = this.state.addedLayersInfo;
+              addedLayersInfo[layerInfo.id].searchDisplayName = e.target.value;
+              this.setState(
+                {
+                  addedLayersInfo: addedLayersInfo,
+                },
+                () => {
+                  this.renderLayerInfoDialog(layerInfo);
+                }
+              );
+            }}
+          />
+        </div>
+        <div>
+          <label>Utdataformat</label>
+          <input
+            style={{ marginRight: "5px" }}
+            type="text"
+            value={layerInfo.searchOutputFormat}
+            onChange={(e) => {
+              let addedLayersInfo = this.state.addedLayersInfo;
+              addedLayersInfo[layerInfo.id].searchOutputFormat = e.target.value;
+              this.setState(
+                {
+                  addedLayersInfo: addedLayersInfo,
+                },
+                () => {
+                  this.renderLayerInfoDialog(layerInfo);
+                }
+              );
+            }}
+          />
+        </div>
+        <div>
+          <label>Geometrifält</label>
+          <input
+            style={{ marginRight: "5px" }}
+            type="text"
+            value={layerInfo.searchGeometryField}
+            onChange={(e) => {
+              let addedLayersInfo = this.state.addedLayersInfo;
+              addedLayersInfo[layerInfo.id].searchGeometryField =
+                e.target.value;
               this.setState(
                 {
                   addedLayersInfo: addedLayersInfo,
@@ -811,13 +888,11 @@ class WMSLayerForm extends Component {
       this.state.capabilities.Capability.Request &&
       this.state.capabilities.Capability.Request.GetFeatureInfo
     ) {
-      formats = this.state.capabilities.Capability.Request.GetFeatureInfo
-        .Format;
+      formats =
+        this.state.capabilities.Capability.Request.GetFeatureInfo.Format;
     }
     if (formats && formats.indexOf("application/geojson") > -1) {
       this.setState({ serverType: "arcgis" });
-    } else {
-      this.setState({ serverType: "geoserver" });
     }
   }
 
@@ -853,8 +928,8 @@ class WMSLayerForm extends Component {
       this.state.capabilities.Capability.Request &&
       this.state.capabilities.Capability.Request.GetFeatureInfo
     ) {
-      formats = this.state.capabilities.Capability.Request.GetFeatureInfo
-        .Format;
+      formats =
+        this.state.capabilities.Capability.Request.GetFeatureInfo.Format;
     }
 
     let formatEles = formats
@@ -952,6 +1027,9 @@ class WMSLayerForm extends Component {
       infoUrl: this.getValue("infoUrl"),
       infoUrlText: this.getValue("infoUrlText"),
       infoOwner: this.getValue("infoOwner"),
+      timeSliderVisible: this.getValue("timeSliderVisible"),
+      timeSliderStart: this.getValue("timeSliderStart"),
+      timeSliderEnd: this.getValue("timeSliderEnd"),
       // solpopup: this.getValue("solpopup"),
       version: this.state.version,
       infoFormat: this.getValue("infoFormat"),
@@ -1000,6 +1078,7 @@ class WMSLayerForm extends Component {
     if (fieldName === "layersInfo")
       value = format_layers_info(this.state.addedLayersInfo);
     if (fieldName === "infoVisible") value = input.checked;
+    if (fieldName === "timeSliderVisible") value = input.checked;
     // if (fieldName === "drawOrder") value = 1000;
     if (fieldName === "visibleAtStart") value = Boolean(value);
     if (fieldName === "searchFields") value = value || null;
@@ -1127,13 +1206,16 @@ class WMSLayerForm extends Component {
   };
 
   render() {
-    var loader = this.state.load ? (
+    const loader = this.state.load ? (
       <i className="fa fa-refresh fa-spin" />
     ) : null;
-    var imageLoader = this.state.imageLoad ? (
+    const imageLoader = this.state.imageLoad ? (
       <i className="fa fa-refresh fa-spin" />
     ) : null;
-    var infoClass = this.state.infoVisible ? "tooltip-info" : "hidden";
+    const infoClass = this.state.infoVisible ? "tooltip-info" : "hidden";
+    const timeSliderClass = this.state.timeSliderVisible
+      ? "tooltip-timeSlider"
+      : "hidden";
 
     const version = this.state.version || "1.1.1";
     const infoFormat = this.state.infoFormat || "";
@@ -1675,72 +1757,44 @@ class WMSLayerForm extends Component {
             />
           </div>
         </div>
-        <div className="separator">Sökning</div>
-        {/* <h2>Sökning</h2> */}
-        <div>
-          <label>Url</label>
-          <input
-            type="text"
-            ref="input_searchUrl"
-            onChange={(e) => {
-              this.setState({ searchUrl: e.target.value });
-              this.validateField("searchUrl", e);
-            }}
-            value={this.state.searchUrl}
-            className={this.getValidationClass("searchUrl")}
-          />
-        </div>
-        <div>
-          <label>Sökfält</label>
-          <input
-            type="text"
-            ref="input_searchPropertyName"
-            onChange={(e) => {
-              this.setState({ searchPropertyName: e.target.value });
-              this.validateField("searchPropertyName", e);
-            }}
-            value={this.state.searchPropertyName}
-            className={this.getValidationClass("searchPropertyName")}
-          />
-        </div>
-        <div>
-          <label>Visningsfält</label>
-          <input
-            type="text"
-            ref="input_searchDisplayName"
-            onChange={(e) => {
-              this.setState({ searchDisplayName: e.target.value });
-              this.validateField("searchDisplayName", e);
-            }}
-            value={this.state.searchDisplayName}
-            className={this.getValidationClass("searchDisplayName")}
-          />
-        </div>
-        <div>
-          <label>Utdataformat</label>
-          <input
-            type="text"
-            ref="input_searchOutputFormat"
-            onChange={(e) => {
-              this.setState({ searchOutputFormat: e.target.value });
-              this.validateField("searchOutputFormat", e);
-            }}
-            value={this.state.searchOutputFormat}
-            className={this.getValidationClass("searchOutputFormat")}
-          />
-        </div>
-        <div>
-          <label>Geometrifält</label>
-          <input
-            type="text"
-            ref="input_searchGeometryField"
-            onChange={(e) => {
-              this.setState({ searchGeometryField: e.target.value });
-              this.validateField("searchGeometryField", e);
-            }}
-            value={this.state.searchGeometryField}
-            className={this.getValidationClass("searchGeometryField")}
-          />
+        <div className="timeSlider-container">
+          <div>
+            <input
+              type="checkbox"
+              ref="input_timeSliderVisible"
+              id="timeSlider"
+              onChange={(e) => {
+                this.setState({ timeSliderVisible: e.target.checked });
+              }}
+              checked={this.state.timeSliderVisible}
+            />
+            &nbsp;
+            <label htmlFor="timeSlider">Tidslinjedatum</label>
+          </div>
+          <div className={timeSliderClass}>
+            <label>Tidslinje start</label>
+            <input
+              type="text"
+              placeholder="ÅÅÅÅMMDD"
+              ref="input_timeSliderStart"
+              onChange={(e) => {
+                this.setState({ timeSliderStart: e.target.value });
+              }}
+              value={this.state.timeSliderStart}
+            />
+          </div>
+          <div className={timeSliderClass}>
+            <label>Tidslinje slut</label>
+            <input
+              type="text"
+              placeholder="ÅÅÅÅMMDD"
+              ref="input_timeSliderEnd"
+              onChange={(e) => {
+                this.setState({ timeSliderEnd: e.target.value });
+              }}
+              value={this.state.timeSliderEnd}
+            />
+          </div>
         </div>
       </fieldset>
     );

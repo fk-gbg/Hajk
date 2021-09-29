@@ -20,7 +20,8 @@
     "Search",
     "StreetView",
     "MarkisConnection",
-    "Suggest"
+    "Suggest",
+    "TimeSlider"
   ],
   "allTools": [
     "Anchor",
@@ -43,6 +44,8 @@
     "Search",
     "StreetView",
     "Suggest",
-    "MarkisConnection"
+    "MarkisConnection",
+    "TimeSlider",
+    "vtsearch"
   ]
 }

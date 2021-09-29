@@ -224,8 +224,8 @@ class App extends React.PureComponent {
       activeDrawerContentFromLocalStorage === "plugins"
     ) {
       // If nothing was found in local storage, fall back to map config setting
-      activeDrawerContentFromLocalStorage = this.props.config.mapConfig.map
-        .activeDrawerOnStart;
+      activeDrawerContentFromLocalStorage =
+        this.props.config.mapConfig.map.activeDrawerOnStart;
     }
 
     const localStorageToolFoundInMapConfig = tools.some((tool) => {
@@ -260,8 +260,10 @@ class App extends React.PureComponent {
   constructor(props) {
     super(props);
 
-    const drawerPermanentFromLocalStorage = this.getDrawerPermanentFromLocalStorage();
-    const activeDrawerContentFromLocalStorage = this.getActiveDrawerContentFromLocalStorage();
+    const drawerPermanentFromLocalStorage =
+      this.getDrawerPermanentFromLocalStorage();
+    const activeDrawerContentFromLocalStorage =
+      this.getActiveDrawerContentFromLocalStorage();
     const canRenderDefaultDrawer = this.hasAnyToolbarTools();
 
     const canRenderCustomDrawer = this.canRenderCustomDrawer(
@@ -393,7 +395,9 @@ class App extends React.PureComponent {
       "touchmove",
       (event) => {
         // If this event would result in changing scale …
-        if (event.scale !== 1) {
+        // scale is always undefined on Android so we need to handle it, otherwise we loose the ability to scroll.
+        // For the prevention pinch-zoom on Android. Check index.css
+        if (event.scale !== undefined && event.scale !== 1) {
           // …cancel it.
           event.preventDefault();
         }
@@ -406,7 +410,6 @@ class App extends React.PureComponent {
 
     // Register various global listeners.
     this.globalObserver.subscribe("infoClick.mapClick", (results) => {
-      this.appModel.highlight(false);
       this.setState({
         mapClickDataResult: results,
       });
@@ -603,7 +606,10 @@ class App extends React.PureComponent {
 
   renderSearchComponent() {
     // FIXME: We should get config from somewhere else now when Search is part of Core
-    if (this.appModel.plugins.search) {
+    if (
+      this.appModel.plugins.search &&
+      this.appModel.plugins.search.options.renderElsewhere !== true
+    ) {
       return (
         <Search
           map={this.appModel.getMap()}

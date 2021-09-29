@@ -12,6 +12,7 @@ import MapViewModel from "./MapViewModel";
 import KmlExport from "./utils/KmlExport";
 import XLSXExport from "./utils/XLSXExport";
 import { encodeCommas, decodeCommas } from "../../utils/StringCommaCoder";
+import LocalStorageHelper from "../../utils/LocalStorageHelper";
 
 const styles = () => ({
   inputRoot: {
@@ -20,6 +21,17 @@ const styles = () => ({
 });
 
 class Search extends React.PureComponent {
+  defaultSearchOptions = {
+    enableLabelOnHighlight: true,
+    wildcardAtStart: false,
+    wildcardAtEnd: true,
+    matchCase: false,
+    activeSpatialFilter: "intersects",
+    maxResultsPerDataset: !isNaN(this.props.options.maxResultsPerDataset)
+      ? this.props.options.maxResultsPerDataset
+      : 100,
+  };
+
   state = {
     searchImplementedPluginsLoaded: false,
     searchSources: [],
@@ -30,15 +42,10 @@ class Search extends React.PureComponent {
     searchActive: "",
     autoCompleteOpen: false,
     loading: false,
-    searchOptions: {
-      wildcardAtStart: false,
-      wildcardAtEnd: true,
-      matchCase: false,
-      activeSpatialFilter: "intersects",
-      maxResultsPerDataset: !isNaN(this.props.options.maxResultsPerDataset)
-        ? this.props.options.maxResultsPerDataset
-        : 100,
-    },
+    searchOptions: LocalStorageHelper.get(
+      "searchOptions",
+      this.defaultSearchOptions
+    ),
     failedWFSFetchMessage: "",
     resultPanelCollapsed: false,
   };
@@ -106,6 +113,7 @@ class Search extends React.PureComponent {
     super(props);
     this.map = props.map;
     this.searchModel = props.app.appModel.searchModel;
+    this.globalObserver = props.app.globalObserver;
     this.initMapViewModel();
     this.initExportHandlers();
     this.bindSubscriptions();
@@ -114,7 +122,7 @@ class Search extends React.PureComponent {
   initMapViewModel = () => {
     const { app } = this.props;
     this.mapViewModel = new MapViewModel({
-      options: this.props.options,
+      options: { ...this.props.options, ...this.state.searchOptions }, // Init the MapViewModel using merged options from both admin ("options")and user's setting ("this.state.options")
       localObserver: this.localObserver,
       map: this.map,
       app: app,
@@ -153,7 +161,7 @@ class Search extends React.PureComponent {
         );
       } else if (type === "Polygon") {
         this.snackbarKey = this.props.enqueueSnackbar(
-          "Tryck en gång i kartan för varje nod i polygonen.",
+          "Tryck en gång i kartan för varje nod i polygonen. Genomför sökningen genom att trycka på den sista noden en gång till.",
           {
             variant: "information",
             anchorOrigin: { vertical: "bottom", horizontal: "center" },
@@ -254,7 +262,8 @@ class Search extends React.PureComponent {
   //Promise must be resolved into object with two methods getResults and getFunctionality
 
   getSearchImplementedPlugins = () => {
-    const pluginsConfToUseSearchInterface = this.getPluginsConfToUseSearchInterface();
+    const pluginsConfToUseSearchInterface =
+      this.getPluginsConfToUseSearchInterface();
     const searchBoundPlugins = this.tryBindSearchMethods(
       pluginsConfToUseSearchInterface
     );
@@ -285,8 +294,7 @@ class Search extends React.PureComponent {
   };
 
   componentDidMount = () => {
-    const { app } = this.props;
-    app.globalObserver.subscribe("core.appLoaded", () => {
+    this.globalObserver.subscribe("core.appLoaded", () => {
       this.getSearchImplementedPlugins().then((searchImplementedPlugins) => {
         this.setState(
           {
@@ -401,11 +409,32 @@ class Search extends React.PureComponent {
           }
         );
       }, this.delayBeforeAutoSearch);
+
+      // Announce the input change, so other plugins can be notified
+      this.globalObserver.publish("search.searchPhraseChanged", searchString);
     }
   };
 
   updateSearchOptions = (searchOptions) => {
-    this.setState(searchOptions);
+    // Ensure that the latest search options are in state
+    this.setState({ searchOptions });
+
+    // We need to re-initiate the FeatureStyle only if some specific
+    // settings have changed (those that effect the style that renders
+    // result features to the OL searchResults source).
+    const isStyleRefreshNeeded =
+      searchOptions.enableLabelOnHighlight !==
+      this.state.searchOptions.enableLabelOnHighlight;
+
+    // Refresh the Feature Style, if needed
+    isStyleRefreshNeeded &&
+      this.mapViewModel.refreshFeatureStyle({
+        enableLabelOnHighlight: searchOptions.enableLabelOnHighlight,
+      });
+
+    // Always save the current settings to local storage, so it can be
+    // retrieved on app reload.
+    LocalStorageHelper.set("searchOptions", searchOptions);
   };
 
   handleOnClickOrKeyboardSearch = () => {
@@ -571,9 +600,10 @@ class Search extends React.PureComponent {
   getMergeResultsFromAllSources = (results) => {
     return results.reduce(
       (searchResults, result) => {
-        searchResults.featureCollections = searchResults.featureCollections.concat(
-          result.value.featureCollections
-        );
+        searchResults.featureCollections =
+          searchResults.featureCollections.concat(
+            result.value.featureCollections
+          );
         searchResults.errors = searchResults.errors.concat(result.value.errors);
         return searchResults;
       },
@@ -669,9 +699,8 @@ class Search extends React.PureComponent {
     this.setState({ loading: true });
     const fetchOptions = this.getSearchResultsFetchSettings();
     const searchResults = await this.fetchResultFromSearchModel(fetchOptions);
-    const failedWFSFetchMessage = this.getPotentialWFSErrorMessage(
-      searchResults
-    );
+    const failedWFSFetchMessage =
+      this.getPotentialWFSErrorMessage(searchResults);
 
     this.setState({
       searchResults,

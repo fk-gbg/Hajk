@@ -544,8 +544,7 @@ class MarkisConnectionModel {
     } else {
       Object.assign(contractControl, {
         contractOk: false,
-        type:
-          "Det finns redan en gällande avtalsyta. (Utan händelselöpnummer).",
+        type: "Det finns redan en gällande avtalsyta. (Utan händelselöpnummer).",
       });
       return contractControl;
     }
@@ -660,9 +659,8 @@ class MarkisConnectionModel {
                       estate
                     );
                     if (interSection) {
-                      let intersectionFeature = parser.readFeature(
-                        interSection
-                      );
+                      let intersectionFeature =
+                        parser.readFeature(interSection);
                       if (
                         intersectionFeature.getGeometry().getType() ===
                           GeometryType.POLYGON ||

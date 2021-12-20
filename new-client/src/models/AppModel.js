@@ -44,6 +44,7 @@ class AppModel {
     this.plugins = {};
     this.activeTool = undefined;
     this.config = config;
+    this.decorateConfig();
     this.coordinateSystemLoader = new CoordinateSystemLoader(
       config.mapConfig.projections
     );
@@ -52,6 +53,15 @@ class AppModel {
     this.cqlFiltersFromParams = {};
     register(this.coordinateSystemLoader.getProj4());
     this.hfetch = hfetch;
+  }
+
+  decorateConfig() {
+    // .allResolutions should be used when creating layers etc
+    // It will also be used in the print plugin to be able to print in higher resolutions.
+    this.config.mapConfig.map.allResolutions = [
+      ...this.config.mapConfig.map.resolutions,
+      ...(this.config.mapConfig.map.extraPrintResolutions ?? []),
+    ];
   }
 
   registerWindowPlugin(windowComponent) {
@@ -713,6 +723,10 @@ class AppModel {
               displayFields:
                 typeof sl.searchDisplayName === "string"
                   ? sl.searchDisplayName.split(",")
+                  : [],
+              shortDisplayFields:
+                typeof sl.searchShortDisplayName === "string"
+                  ? sl.searchShortDisplayName.split(",")
                   : [],
               geometryField: sl.searchGeometryField || "geom",
               outputFormat: sl.searchOutputFormat || "GML3",

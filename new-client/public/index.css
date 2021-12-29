@@ -55,16 +55,13 @@ body {
 }
 
 .compass {
-  animation: compass 1.2s cubic-bezier(0.51, 0.41, 0.17, 1.1) infinite;
-  height: 80px;
+  animation: float 3s ease-out infinite;
+  height: 550px;
 }
 
-@keyframes compass {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
+@keyframes float {
+  50% {
+    transform: translate(0, 20px);
   }
 }
 

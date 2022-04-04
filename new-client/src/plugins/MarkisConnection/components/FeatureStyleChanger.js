@@ -4,7 +4,7 @@ import { IconButton, Grid, Typography, Tooltip } from "@material-ui/core";
 import Slider from "@material-ui/core/Slider";
 import { withStyles, withTheme } from "@material-ui/core/styles";
 import PaletteIcon from "@material-ui/icons/Palette";
-import Dialog from "../../../components/Dialog";
+import Dialog from "../../../components/Dialog/Dialog";
 import { SketchPicker } from "react-color";
 
 const styles = (theme) => ({
@@ -132,6 +132,7 @@ class FeatureStyleChanger extends React.Component {
             text: this.renderFeatureStyleToggler(),
             headerText: "Ändra stil",
             buttonText: "OK",
+            useLegacyNonMarkdownRenderer: true,
           }}
           open={dialogOpen}
           onClose={() => {

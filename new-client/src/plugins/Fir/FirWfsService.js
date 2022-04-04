@@ -28,7 +28,7 @@ class FirWfsService {
     return filters.length === 0 ? null : filters;
   }
 
-  _getFiltersForStringAndGeometrySearch(params) {
+  #getFiltersForStringAndGeometrySearch(params) {
     let rootFilter = null;
     let geometryFilters = null;
     let stringFilter = null;
@@ -69,7 +69,7 @@ class FirWfsService {
     return rootFilter;
   }
 
-  _getFiltersForDesignations(params) {
+  #getFiltersForDesignations(params) {
     let rootFilter = null;
     let designations = params.designations || [];
 
@@ -98,9 +98,9 @@ class FirWfsService {
 
     if (designations.length === 0) {
       // zero designations
-      rootFilter = this._getFiltersForStringAndGeometrySearch(params);
+      rootFilter = this.#getFiltersForStringAndGeometrySearch(params);
     } else if (designations.length >= 1) {
-      rootFilter = this._getFiltersForDesignations(params);
+      rootFilter = this.#getFiltersForDesignations(params);
     }
 
     return {
@@ -131,7 +131,7 @@ class FirWfsService {
     });
 
     let p = { ...params };
-    p.searchType = this.getBaseSearchType();
+    p.searchType = this.model.config.wfsRealEstateLayer;
     p.searchType.searchProp = p.searchType.idField;
     p.searchType.featureType = p.searchType.layers[0];
     p.designations = ids;
@@ -157,12 +157,6 @@ class FirWfsService {
       });
   }
 
-  getBaseSearchType = () => {
-    return this.model.getSearchTypeById(
-      this.model.config.wfsRealEstateLayer.id
-    );
-  };
-
   search(params) {
     let _params = { ...this.params, ...params };
 
@@ -173,7 +167,7 @@ class FirWfsService {
 
     let baseSearchType = this.model.baseSearchType;
 
-    let searchType = this.model.getSearchTypeById(_params.searchTypeId);
+    let searchType = this.model.getWfsById(_params.searchTypeId);
     searchType.searchProp = searchType.searchFields[0];
     searchType.featureType = searchType.layers[0];
     const isDesignationSearch =
@@ -192,6 +186,14 @@ class FirWfsService {
           return response ? response.json() : null;
         })
         .then((data) => {
+          if (data.features?.length) {
+            data.features = data.features.filter((feature) => {
+              return feature.properties[_params.searchType.idField]
+                ? true
+                : false;
+            });
+          }
+
           if (isDesignationSearch || data.features?.length === 0) {
             try {
               // handle parser error

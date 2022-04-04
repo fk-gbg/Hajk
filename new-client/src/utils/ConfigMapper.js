@@ -124,7 +124,9 @@ export default class ConfigMapper {
       type: "wms",
       options: {
         id: args.id,
-        url: (this.proxy || "") + args.url,
+        url:
+          (this.proxy || "") +
+          (this.getPotentialCustomUrl(args.customGetMapUrl) || args.url),
         name: args.id, // FIXME: Should this be "args.caption"?
         layerType: args.layerType,
         caption: args.caption,
@@ -199,6 +201,13 @@ export default class ConfigMapper {
     }
 
     return config;
+  }
+
+  // There might be a custom getMap-url provided in the config. If there
+  // is, we have to make sure to override the url-value with the custom getMap-url.
+  // See #345 for more information.
+  getPotentialCustomUrl(customGetMapUrl) {
+    return customGetMapUrl?.trim().length > 0 ? customGetMapUrl : null;
   }
 
   mapWMTSConfig(args, properties) {
@@ -276,11 +285,12 @@ export default class ConfigMapper {
         caption: args.caption,
         content: args.content,
         dataFormat: args.dataFormat,
+        fillColor: args.fillColor,
         filterable: args.filterable,
         filterAttribute: args.filterAttribute,
         filterComparer: args.filterComparer,
         filterValue: args.filterValue,
-        icon: args.legend,
+        icon: args.icon,
         id: args.id,
         infoOwner: args.infoOwner,
         information: args.infobox,
@@ -300,6 +310,9 @@ export default class ConfigMapper {
           },
         ],
         legendIcon: args.legendIcon,
+        lineColor: args.lineColor,
+        lineStyle: args.lineStyle,
+        lineWidth: args.lineWidth,
         maxZoom: args.maxZoom,
         minZoom: args.minZoom,
         name: args.id,
@@ -318,11 +331,14 @@ export default class ConfigMapper {
           srsname: args.projection,
           bbox: "",
         },
+        pointSize: args.pointSize,
         projection: args.projection,
         queryable: args.queryable,
         sldStyle: args.sldStyle,
         sldText: args.sldText,
         sldUrl: args.sldUrl,
+        symbolXOffset: args.symbolXOffset,
+        symbolYOffset: args.symbolYOffset,
         url: args.url,
         visible: args.visibleAtStart,
         timeSliderStart: args.timeSliderStart,

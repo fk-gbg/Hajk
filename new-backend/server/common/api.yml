@@ -227,6 +227,24 @@ paths:
         200:
           description: Available images were fetched successfully
           content: {}
+  /mapconfig/listvideo:
+    get:
+      tags:
+        - Admin - Maps and layers
+      description: List available videos in the upload folder
+      responses:
+        200:
+          description: Available videos were fetched successfully
+          content: {}
+  /mapconfig/listaudio:
+    get:
+      tags:
+        - Admin - Maps and layers
+      description: List available audio files in the upload folder
+      responses:
+        200:
+          description: Available audio files were fetched successfully
+          content: {}
   /mapconfig/{map}:
     get:
       tags:
@@ -564,6 +582,37 @@ paths:
       responses:
         204:
           description: All good
+          content: {}
+  /settings/update/{map}/{tool}:
+    put:
+      tags:
+        - Admin - Maps and layers
+      requestBody:
+        description: Settings for given map's specific tool
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LayerSwitcherBody"
+        required: true
+      parameters:
+        - name: map
+          in: path
+          description: Name of the map
+          required: true
+          schema:
+            type: string
+        - name: tool
+          in: path
+          description: Name of the tool to be edited
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: Created
+          content: {}
+        204:
+          description: Updated
           content: {}
   /settings/{layerType}:
     post:

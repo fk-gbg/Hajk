@@ -1,25 +1,18 @@
 import React from "react";
 import SearchBar from "./SearchBar";
-import { withStyles } from "@material-ui/core/styles";
 import { withSnackbar } from "notistack";
 import Observer from "react-event-observer";
-import EditIcon from "@material-ui/icons/Edit";
-import Crop54Icon from "@material-ui/icons/Crop54";
-import TouchAppIcon from "@material-ui/icons/TouchApp";
-import RadioButtonUncheckedIcon from "@material-ui/icons/RadioButtonUnchecked";
-import SettingsIcon from "@material-ui/icons/Settings";
+import EditIcon from "@mui/icons-material/Edit";
+import Crop54Icon from "@mui/icons-material/Crop54";
+import TouchAppIcon from "@mui/icons-material/TouchApp";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import SettingsIcon from "@mui/icons-material/Settings";
 import MapViewModel from "./MapViewModel";
 import KmlExport from "./utils/KmlExport";
 import XLSXExport from "./utils/XLSXExport";
 import { encodeCommas, decodeCommas } from "../../utils/StringCommaCoder";
 import LocalStorageHelper from "../../utils/LocalStorageHelper";
 import { functionalOk as functionalCookieOk } from "models/Cookie";
-
-const styles = () => ({
-  inputRoot: {
-    width: "100%",
-  },
-});
 
 class Search extends React.PureComponent {
   defaultSearchOptions = {
@@ -116,6 +109,7 @@ class Search extends React.PureComponent {
     this.map = props.map;
     this.searchModel = props.app.appModel.searchModel;
     this.globalObserver = props.app.globalObserver;
+    this.disableAutocomplete = props.options.disableAutocomplete ?? false;
     this.initMapViewModel();
     this.initExportHandlers();
     this.bindSubscriptions();
@@ -391,6 +385,11 @@ class Search extends React.PureComponent {
     );
   };
 
+  // This function name is a bit confusing... It's really a handler for the search-bar-input (which is an
+  // <Autocomplete />-component, therefore the name). This change-handler makes sure to check the text inputted by
+  // the user, and if no input has been seen for 'this.delayBeforeAutoSearch' a search is conducted. The search will result
+  // in some autocomplete-objects, (if 'this.disableAutocomplete' is set to false) or some search-result-objects (if
+  // 'this.disableAutocomplete' is set to true).
   handleOnAutocompleteInputChange = (event, searchString, reason) => {
     if (this.isUserInput(searchString, reason)) {
       clearTimeout(this.timer);
@@ -406,9 +405,15 @@ class Search extends React.PureComponent {
             resultPanelCollapsed: false,
           },
           () => {
+            // If the search-string is long enough, we can perform a search...
             if (this.state.searchString.length >= 3) {
-              this.updateAutocompleteList(this.state.searchString);
+              // If the autocomplete should be disabled, we perform a regular search
+              // with doSearch(), otherwise we'll fetch some autoComplete-objects.
+              this.disableAutocomplete
+                ? this.doSearch()
+                : this.updateAutocompleteList(this.state.searchString);
             } else {
+              // If the search-string is not long enough, we'll reset the autoComplete.
               this.setState({
                 autocompleteList: [],
               });
@@ -992,7 +997,6 @@ class Search extends React.PureComponent {
   };
 
   render() {
-    const { classes } = this.props;
     const {
       searchString,
       searchActive,
@@ -1012,9 +1016,7 @@ class Search extends React.PureComponent {
       this.state.searchImplementedPluginsLoaded &&
       this.props.app.appModel.config.mapConfig.map.clean === false && (
         <SearchBar
-          classes={{
-            root: classes.inputRoot,
-          }}
+          sx={{ width: "100%" }}
           escapeRegExp={this.escapeRegExp}
           localObserver={this.localObserver}
           searchTools={searchTools}
@@ -1045,4 +1047,4 @@ class Search extends React.PureComponent {
     );
   }
 }
-export default withStyles(styles)(withSnackbar(Search));
+export default withSnackbar(Search);

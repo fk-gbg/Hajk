@@ -53,7 +53,15 @@ export default class ConfigMapper {
         // to append the remaining values with &.
         const theGlue = args.url.includes("?") ? "&" : "?";
 
-        legendUrl = `${proxy}${args.url}${theGlue}REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=${layer}&STYLE=${style}${geoserverLegendOptions}${qgisOptions}`;
+        // There might be a custom get-map url specified. The customGetMapUrl naming is a bit
+        // confusing, since this custom url should not only be used for getMap-requests... The custom
+        // url should be used for all requests, and the 'ordinary' url (args.url) should only be used
+        // for the getCapabilities-request (used in admin). The custom url is used as a work around so
+        // that problems linked to reverse-proxies can be avoided.
+        // Let's check if there is a custom url, and if there is we'll use that one instead of the 'ordinary' url:
+        const baseUrl = args.customGetMapUrl || args.url;
+        // Then we can create the legend-url by combining all the necessary search-params end so on...
+        legendUrl = `${proxy}${baseUrl}${theGlue}REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=${layer}&STYLE=${style}${geoserverLegendOptions}${qgisOptions}`;
       }
       // If there's a legend URL specified in admin, use it as is
       else {
@@ -153,6 +161,7 @@ export default class ConfigMapper {
             : args.serverType || "geoserver",
         crossOrigin: properties.mapConfig.map.crossOrigin || "anonymous",
         attribution: args.attribution,
+        showAttributeTableButton: args.showAttributeTableButton,
         searchUrl: args.searchUrl,
         searchPropertyName: args.searchPropertyName,
         searchDisplayName: args.searchDisplayName,
@@ -294,6 +303,10 @@ export default class ConfigMapper {
         id: args.id,
         infoOwner: args.infoOwner,
         information: args.infobox,
+        displayFields: args.displayFields,
+        secondaryLabelFields: args.secondaryLabelFields,
+        shortDisplayFields: args.shortDisplayFields,
+        infoclickIcon: args.infoclickIcon,
         infoText: args.infoText,
         infoTitle: args.infoTitle,
         infoUrl: args.infoUrl,

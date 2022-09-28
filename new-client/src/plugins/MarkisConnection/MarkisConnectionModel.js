@@ -2,7 +2,6 @@ import * as signalR from "@microsoft/signalr";
 import intersect from "@turf/intersect";
 import kinks from "@turf/kinks";
 import { WFS } from "ol/format";
-import { Polygon, MultiPolygon } from "ol/geom.js";
 import IsLike from "ol/format/filter/IsLike";
 import Intersects from "ol/format/filter/Intersects";
 import Or from "ol/format/filter/Or";
@@ -110,7 +109,7 @@ class MarkisConnectionModel {
         if (response.features.length === 1) {
           const estateFeature = response.features[0];
           const geometryType = estateFeature.getGeometry().getType();
-          if (geometryType instanceof Polygon) {
+          if (geometryType === "Polygon") {
             let feature = new Feature({});
             feature.setGeometryName(this.geometryName);
             feature.setGeometry(estateFeature.getGeometry());
@@ -632,7 +631,7 @@ class MarkisConnectionModel {
         ) {
           createdFeatures.push(feature);
           let geom = feature.getGeometry();
-          if (geom.getType() instanceof Polygon) {
+          if (geom.getType() === "Polygon") {
             totalArea += Math.floor(geom.getArea());
           }
           promises.push(this.lookupEstate(estateSource, feature));
@@ -650,7 +649,7 @@ class MarkisConnectionModel {
               );
               let affectedArea = 0;
               createdFeatures.forEach((drawnArea) => {
-                if (drawnArea.getGeometry().getType() instanceof Polygon) {
+                if (drawnArea.getGeometry().getType() === "Polygon") {
                   try {
                     let interSection = intersect(
                       parser.writeFeatureObject(drawnArea),
@@ -660,10 +659,10 @@ class MarkisConnectionModel {
                       let intersectionFeature =
                         parser.readFeature(interSection);
                       if (
-                        intersectionFeature.getGeometry().getType() instanceof
-                          Polygon ||
-                        intersectionFeature.getGeometry().getType() instanceof
-                          MultiPolygon
+                        intersectionFeature.getGeometry().getType() ===
+                          "Polygon" ||
+                        intersectionFeature.getGeometry().getType() ===
+                          "MultiPolygon"
                       ) {
                         try {
                           let tempArea = intersectionFeature

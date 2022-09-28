@@ -1,5 +1,5 @@
 {
-  "version": "3.9.0",
+  "version": "3.11.0-dev",
   "projections": [
     {
       "code": "EPSG:3006",
@@ -549,6 +549,10 @@
     "defaultCookieNoticeUrl": "https://pts.se/sv/bransch/regler/lagar/lag-om-elektronisk-kommunikation/kakor-cookies/",
     "showCookieNotice": false,
     "cookieUse3dPart": false,
-    "crossOrigin": "anonymous"
+    "crossOrigin": "anonymous",
+    "introductionEnabled": true,
+    "introductionShowControlButton": true,
+    "introductionSteps": [],
+    "showRecentlyUsedPlugins": false
   }
 }

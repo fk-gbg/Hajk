@@ -9,8 +9,9 @@ import WMSLayer from "./layers/WMSLayer.js";
 import WMTSLayer from "./layers/WMTSLayer.js";
 import WFSVectorLayer from "./layers/VectorLayer.js";
 import { bindMapClickEvent } from "./Click.js";
+import MapClickModel from "./MapClickModel";
 import { defaults as defaultInteractions } from "ol/interaction";
-import { Map, View } from "ol";
+import { Map as OLMap, View } from "ol";
 // TODO: Uncomment and ensure they show as expected
 // import {
 // defaults as defaultControls,
@@ -39,21 +40,41 @@ class AppModel {
    * @param Observer observer
    */
   constructor(settings) {
-    const { config, globalObserver, refreshMUITheme } = settings;
     this.map = undefined;
     this.windows = [];
     this.plugins = {};
     this.activeTool = undefined;
+    this.layersFromParams = [];
+    this.cqlFiltersFromParams = {};
+    this.hfetch = hfetch;
+    this.pluginHistory = new Map();
+
+    // We store the click location data here for later use.
+    // Right now this is only used in the new infoClick but it will most likely be used in other parts of the program.
+    // Not optimal...
+    this.clickLocationData = {
+      x: 0,
+      y: 0,
+      zoom: 0,
+    };
+  }
+
+  init(settings) {
+    // Lets prevent multiple instances...
+    if (this.initialized)
+      throw new Error("You should only initialize AppModel once!");
+
+    this.initialized = true;
+
+    const { config, globalObserver, refreshMUITheme } = settings;
+
     this.config = config;
     this.decorateConfig();
     this.coordinateSystemLoader = new CoordinateSystemLoader(
       config.mapConfig.projections
     );
     this.globalObserver = globalObserver;
-    this.layersFromParams = [];
-    this.cqlFiltersFromParams = {};
     register(this.coordinateSystemLoader.getProj4());
-    this.hfetch = hfetch;
     this.refreshMUITheme = refreshMUITheme;
   }
 
@@ -84,6 +105,36 @@ class AppModel {
           window.closeWindow();
         }
       });
+  }
+
+  pushPluginIntoHistory(plugin) {
+    // plugin is an object that will contain a 'type' as well as some
+    // other properties. We use the 'type' as a unique key in our Map.
+    const { type, ...rest } = plugin;
+    // If plugin already exists in set…
+    if (this.pluginHistory.has(type)) {
+      // …remove it first so that we don't have duplicates.
+      this.pluginHistory.delete(type);
+    }
+    this.pluginHistory.set(type, rest);
+
+    // Finally, announce to everyone who cares
+    this.globalObserver.publish(
+      "core.pluginHistoryChanged",
+      this.pluginHistory
+    );
+  }
+
+  getClickLocationData() {
+    return this.clickLocationData;
+  }
+
+  setClickLocationData(x, y, zoom) {
+    this.clickLocationData = {
+      x: x,
+      y: y,
+      zoom: zoom,
+    };
   }
 
   /**
@@ -155,6 +206,22 @@ class AppModel {
   getDrawerPlugins() {
     return this.getPlugins().filter((plugin) => {
       return ["toolbar"].includes(plugin.options.target);
+    });
+  }
+
+  /**
+   * @summary Return all plugins that might render in Drawer.
+   *
+   * @description There reason this functions exists is that we must
+   * have a way to determine whether the Drawer toggle button should be
+   * rendered. It's not as easy as checking for Drawer plugins only (i.e.
+   * those with target=toolbar) - this simple logic gets complicated by
+   * the fact that Widget plugins (target=left|right) also render Drawer
+   * buttons on small screens.
+   */
+  getPluginsThatMightRenderInDrawer() {
+    return this.getPlugins().filter((plugin) => {
+      return ["toolbar", "left", "right"].includes(plugin.options.target);
     });
   }
 
@@ -252,7 +319,7 @@ class AppModel {
       }),
     };
 
-    this.map = new Map({
+    this.map = new OLMap({
       controls: [
         // new FullScreen({ target: document.getElementById("controls-column") }),
         // new Rotate({ target: document.getElementById("controls-column") }),
@@ -313,23 +380,65 @@ class AppModel {
     // So, we create the Set no matter what:
     this.map.clickLock = new Set();
 
+    const infoclickOptions = config.tools.find(
+      (t) => t.type === "infoclick"
+    )?.options;
+    if (infoclickOptions?.useNewInfoclick === true) {
+      const mapClickModel = new MapClickModel(
+        this.map,
+        this.globalObserver,
+        infoclickOptions
+      );
+
+      mapClickModel.bindMapClick((featureCollections) => {
+        const featureCollectionsToBeHandledByMapClickViewer =
+          featureCollections.filter((fc) => fc.type !== "SearchResults");
+
+        // Publish the retrived collections, even if they're empty. We want the
+        // handling components to know, so they can act accordingly (e.g. close
+        // window if no features are to be shown).
+        this.globalObserver.publish(
+          "mapClick.featureCollections",
+          featureCollectionsToBeHandledByMapClickViewer
+        );
+
+        // Next, handle search results features.
+        // Check if we've got any features from the search layer,
+        // and if we do, announce it to the search component so it can
+        // show relevant feature in the search results list.
+        const searchResultFeatures = featureCollections.find(
+          (c) => c.type === "SearchResults"
+        )?.features;
+
+        if (searchResultFeatures?.length > 0) {
+          this.globalObserver.publish(
+            "infoClick.searchResultLayerClick",
+            searchResultFeatures // Clicked features sent to the search-component for display
+          );
+        }
+      });
+    }
+
     // FIXME: Potential miss here: don't we want to register click on search results
     // But we register the Infoclick handler only if the plugin exists in map config:
     // even if Infoclick plugin is inactive? Currently search won't register clicks in
     // map without infoclick, which seems as an unnecessary limitation.
-    if (config.tools.some((tool) => tool.type === "infoclick")) {
+    if (
+      config.tools.some((tool) => tool.type === "infoclick") &&
+      infoclickOptions?.useNewInfoclick !== true
+    ) {
       bindMapClickEvent(this.map, (mapClickDataResult) => {
         // We have to separate features coming from the searchResult-layer
         // from the rest, since we want to render this information in the
         // search-component rather than in the featureInfo-component.
         const searchResultFeatures = mapClickDataResult.features.filter(
           (feature) => {
-            return feature?.layer.get("type") === "searchResultLayer";
+            return feature?.layer.get("name") === "pluginSearchResults";
           }
         );
         const infoclickFeatures = mapClickDataResult.features.filter(
           (feature) => {
-            return feature?.layer.get("type") !== "searchResultLayer";
+            return feature?.layer.get("name") !== "pluginSearchResults";
           }
         );
 
@@ -383,19 +492,16 @@ class AppModel {
     this.clearing = true;
     this.highlight(false);
     this.map
-      .getLayers()
-      .getArray()
-      .forEach((layer) => {
-        if (
-          layer.getProperties &&
-          layer.getProperties().layerInfo &&
-          layer.getProperties().layerInfo.layerType === "layer"
-        ) {
-          if (layer.layerType === "group") {
-            this.globalObserver.publish("layerswitcher.hideLayer", layer);
-          } else {
-            layer.setVisible(false);
-          }
+      .getAllLayers()
+      .filter(
+        (l) =>
+          l.getVisible() === true &&
+          ["layer", "group"].includes(l.get("layerType"))
+      )
+      .forEach((l) => {
+        l.setVisible(false);
+        if (l.get("layerType") === "group") {
+          this.globalObserver.publish("layerswitcher.hideLayer", l);
         }
       });
     setTimeout(() => {
@@ -448,11 +554,13 @@ class AppModel {
   }
 
   lookup(layers, type) {
-    var matchedLayers = [];
+    const matchedLayers = [];
     layers.forEach((layer) => {
       const layerConfig = this.config.layersConfig.find(
         (lookupLayer) => lookupLayer.id === layer.id
       );
+      // Note that "layer" below IS NOT an OL Layer, only a structure from our config.
+      // Hence, no layer.set("layerType"). Instead we do this:
       layer.layerType = type;
       // Use the general value for infobox if not present in map config.
       if (layerConfig !== undefined && layerConfig.type === "vector") {
@@ -498,19 +606,16 @@ class AppModel {
 
     // Prepare layers
     this.layers = this.flattern(layerSwitcherConfig);
-    // FIXME: Use map instead?
-    Object.keys(this.layers)
-      .sort((a, b) => this.layers[a].drawOrder - this.layers[b].drawOrder)
-      .map((sortedKey) => this.layers[sortedKey])
-      .forEach((layer) => {
-        if (this.layersFromParams.length > 0) {
-          layer.visibleAtStart = this.layersFromParams.some(
-            (layerId) => layerId === layer.id
-          );
-        }
-        layer.cqlFilter = this.cqlFiltersFromParams[layer.id] || null;
-        this.addMapLayer(layer);
-      });
+    // Loop the layers and add each of them to the map
+    this.layers.forEach((layer) => {
+      if (this.layersFromParams.length > 0) {
+        layer.visibleAtStart = this.layersFromParams.some(
+          (layerId) => layerId === layer.id
+        );
+      }
+      layer.cqlFilter = this.cqlFiltersFromParams[layer.id] || null;
+      this.addMapLayer(layer);
+    });
 
     // FIXME: Move to infoClick instead. All other plugins create their own layers.
     if (infoclickConfig !== undefined) {
@@ -536,6 +641,10 @@ class AppModel {
     ];
     this.highlightSource = new VectorSource();
     this.highlightLayer = new VectorLayer({
+      caption: "Infoclick layer",
+      name: "pluginInfoclick",
+      layerType: "system",
+      zIndex: 5001, // System layer's zIndex start at 5000, ensure click is above
       source: this.highlightSource,
       style: new Style({
         stroke: new Stroke({
@@ -741,10 +850,15 @@ class AppModel {
                   ? sl.searchPropertyName.split(",")
                   : [],
               infobox: sl.infobox || "",
+              infoclickIcon: sl.infoclickIcon || "",
               aliasDict: "",
               displayFields:
                 typeof sl.searchDisplayName === "string"
                   ? sl.searchDisplayName.split(",")
+                  : [],
+              secondaryLabelFields:
+                typeof sl.secondaryLabelFields === "string"
+                  ? sl.secondaryLabelFields.split(",")
                   : [],
               shortDisplayFields:
                 typeof sl.searchShortDisplayName === "string"
@@ -810,4 +924,4 @@ class AppModel {
   }
 }
 
-export default AppModel;
+export default new AppModel();

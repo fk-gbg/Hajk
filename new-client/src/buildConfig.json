@@ -21,7 +21,6 @@
     "Sketch",
     "StreetView",
     "MarkisConnection",
-    "Suggest",
     "TimeSlider"
   ],
   "allTools": [
@@ -51,7 +50,6 @@
     "Search",
     "Sketch",
     "StreetView",
-    "Suggest",
     "MarkisConnection",
     "TimeSlider",
     "vtsearch"

@@ -1,19 +1,18 @@
 import React from "react";
 
-import DesktopWindowsIcon from "@material-ui/icons/DesktopWindows";
-import { withStyles } from "@material-ui/core/styles";
+import { styled } from "@mui/material/styles";
+import MonitorIcon from "@mui/icons-material/Monitor";
 import { withSnackbar } from "notistack";
 
 import MarkisConnectionModel from "./MarkisConnectionModel";
 import MarkisConnectionView from "./MarkisConnectionView";
 import Observer from "react-event-observer";
 
-const styles = (theme) => ({
-  root: {
-    backgroundColor: theme.palette.background.default,
-    overflowX: "hidden",
-  },
-});
+const Root = styled("div")(({ theme }) => ({
+  backgroundColor: theme.palette.background.default,
+  overflowX: "hidden",
+}));
+
 class MarkisConnection extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -71,15 +70,14 @@ class MarkisConnection extends React.PureComponent {
   }
 
   renderDrawerContent = () => {
-    const { classes } = this.props;
     return (
-      <div className={classes.root}>
+      <Root>
         <MarkisConnectionView
           model={this.MarkisConnectionModel}
           app={this.props.app}
           localObserver={this.localObserver}
         />
-      </div>
+      </Root>
     );
   };
 
@@ -87,7 +85,7 @@ class MarkisConnection extends React.PureComponent {
     const { app } = this.props;
     app.globalObserver.publish("core.addDrawerToggleButton", {
       value: "markisconnection",
-      ButtonIcon: DesktopWindowsIcon,
+      ButtonIcon: MonitorIcon,
       caption: "Markiskoppling",
       drawerTitle: "Markiskoppling",
       order: 100,
@@ -100,4 +98,4 @@ class MarkisConnection extends React.PureComponent {
   }
 }
 
-export default withStyles(styles)(withSnackbar(MarkisConnection));
+export default withSnackbar(MarkisConnection);

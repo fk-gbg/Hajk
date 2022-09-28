@@ -1,66 +1,47 @@
 import React from "react";
-import ToggleButton from "@material-ui/lab/ToggleButton";
-import ToggleButtonGroup from "@material-ui/lab/ToggleButtonGroup";
-import Grid from "@material-ui/core/Grid";
-import EditIcon from "@material-ui/icons/Edit";
-import FormatShapesIcon from "@material-ui/icons/FormatShapes";
-import TuneIcon from "@material-ui/icons/Tune";
-import DeleteIcon from "@material-ui/icons/Delete";
-import TimelineIcon from "@material-ui/icons/Timeline";
-import TouchAppIcon from "@material-ui/icons/TouchApp";
-import Tooltip from "@material-ui/core/Tooltip";
-import Button from "@material-ui/core/Button";
-import { withStyles } from "@material-ui/core/styles";
-import SaveIcon from "@material-ui/icons/Save";
-import CancelIcon from "@material-ui/icons/Cancel";
-import { Typography } from "@material-ui/core";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Grid from "@mui/material/Grid";
+import EditIcon from "@mui/icons-material/Edit";
+import FormatShapesIcon from "@mui/icons-material/FormatShapes";
+import TuneIcon from "@mui/icons-material/Tune";
+import DeleteIcon from "@mui/icons-material/Delete";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import TouchAppIcon from "@mui/icons-material/TouchApp";
+import Tooltip from "@mui/material/Tooltip";
+import Button from "@mui/material/Button";
+import { styled } from "@mui/material/styles";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
+import { Typography } from "@mui/material";
 
-const styles = (theme) => ({
-  container: {
-    display: "flex",
-    flexWrap: "wrap",
-  },
-  text: {
-    marginLeft: theme.spacing(1),
-    display: "flex",
-    flexWrap: "wrap",
-  },
-  createButtons: {
-    margin: theme.spacing(1),
-    width: 100,
-  },
-  clearSearchButton: {
-    margin: theme.spacing(1),
-    width: 100,
-    textAlign: "center",
-  },
-  styledButtonGroup: {
-    margin: theme.spacing(0),
-    display: "flex",
-    width: "100%",
-  },
-  styledToggleButton: {
-    width: "100%",
-    color: theme.palette.text.secondary,
-    justifyContent: "left",
-  },
-  centerElements: {
-    paddingTop: theme.spacing(4),
-    textAlign: "center",
-    width: "100%",
-  },
-  toolIcons: {
-    paddingRight: theme.spacing(0.5),
-  },
-});
+const Centered = styled("div")(({ theme }) => ({
+  paddingTop: theme.spacing(4),
+  textAlign: "center",
+  width: "100%",
+}));
 
-const StyledToggleButtonGroup = withStyles((theme) => ({
+const CreateButton = styled(Button)(({ theme }) => ({
+  margin: theme.spacing(1),
+  width: 100,
+}));
+
+const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
+  width: "100%",
+  color: theme.palette.text.secondary,
+  justifyContent: "left",
+}));
+
+const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   grouped: {
     borderRight: "none",
     borderLeft: "none",
     borderRadius: 0,
   },
-}))(ToggleButtonGroup);
+  margin: theme.spacing(0),
+  display: "flex",
+  width: "100%",
+}));
 
 class Toolbar extends React.Component {
   state = {
@@ -222,72 +203,66 @@ class Toolbar extends React.Component {
   };
 
   renderButtons() {
-    const { classes, model } = this.props;
+    const { model } = this.props;
     const editTools = (
       <Grid container direction="column" alignItems="center">
         <StyledToggleButtonGroup
           orientation="vertical"
-          className={classes.styledButtonGroup}
           size="small"
           exclusive
           onChange={this.handleChange("createMethod")}
           value={this.state.createMethod}
         >
-          <ToggleButton
-            className={classes.styledToggleButton}
+          <StyledToggleButton
             key={1}
             value="add"
             disabled={!this.state.allowPolygon}
           >
             <Tooltip title="Klicka på första punkten där du vill skapa en nod, och fortsätt klicka en gång per ny nod. Avsluta med dubbelklick.">
               <span style={{ display: "flex" }}>
-                <FormatShapesIcon size="small" className={classes.toolIcons} />
+                <FormatShapesIcon size="small" sx={{ paddingRight: 0.5 }} />
                 <Typography>SKAPA YTA</Typography>
               </span>
             </Tooltip>
-          </ToggleButton>
+          </StyledToggleButton>
 
-          <ToggleButton
-            className={classes.styledToggleButton}
+          <StyledToggleButton
             disabled={!this.state.allowLine}
             key={2}
             value="addLine"
           >
             <Tooltip title="Klicka på första punkten där du vill skapa en nod, och fortsätt klicka en gång per ny nod. Avsluta med dubbelklick.">
               <span style={{ display: "flex" }}>
-                <TimelineIcon className={classes.toolIcons} />
+                <TimelineIcon sx={{ paddingRight: 0.5 }} />
                 <Typography>SKAPA LINJE</Typography>
               </span>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton
-            className={classes.styledToggleButton}
+          </StyledToggleButton>
+          <StyledToggleButton
             key={3}
             value="addEstate"
             disabled={!this.state.allowPolygon}
           >
             <Tooltip title="För att kopiera en befintlig yta, säkerställ att lagret du vill kopiera en yta ifrån är tänt i lagerhanteraren (syns även som flik längst ner i kartan) och att objektet inte täcks av objekt från något annat lager (gäller ej bakgrundskartor). Släck annars lagret (räcker ej att klicka på ögat). Så snart du har valt ett objekt kopplas det till det avtal du redigerar.">
               <span style={{ display: "flex" }}>
-                <TouchAppIcon className={classes.toolIcons} />
+                <TouchAppIcon sx={{ paddingRight: 0.5 }} />
                 <Typography>VÄLJ YTA</Typography>
               </span>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton
-            className={classes.styledToggleButton}
+          </StyledToggleButton>
+          <StyledToggleButton
             key={4}
             disabled={!this.state.featuresExist}
             value="edit"
           >
             <Tooltip title="För att redigera en geometri; klicka på verktyget och dra sedan i noderna.">
               <span style={{ display: "flex" }}>
-                <EditIcon className={classes.toolIcons} />
+                <EditIcon sx={{ paddingRight: 0.5 }} />
                 <Typography>REDIGERA</Typography>
               </span>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton
-            className={classes.styledToggleButton}
+          </StyledToggleButton>
+          <StyledToggleButton
             key={5}
             disabled={!this.state.featuresExist}
             value="remove"
@@ -295,13 +270,12 @@ class Toolbar extends React.Component {
           >
             <Tooltip title="Om du vill radera en yta kan du använda Radera-verktyget. Aktivera verktyget i menyn och klicka sedan på den yta du vill ta bort. För att ytan skall försvinna från Markis måste du klicka på spara när du är klar. OBS: Du kan enbart radera ytor kopplade till det avtal du arbetar med.">
               <span style={{ display: "flex" }}>
-                <DeleteIcon className={classes.toolIcons} />
+                <DeleteIcon sx={{ paddingRight: 0.5 }} />
                 <Typography>RADERA</Typography>
               </span>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton
-            className={classes.styledToggleButton}
+          </StyledToggleButton>
+          <StyledToggleButton
             disabled={!model.promptForAttributes || !this.state.featuresExist}
             key={6}
             value="editAttributes"
@@ -309,11 +283,11 @@ class Toolbar extends React.Component {
           >
             <Tooltip title="Om du vill ändra attribut på en yta kan du använda Ändra attribut-verktyget. Aktivera verktyget i menyn och klicka sedan på den yta du vill redigera. För att ytan skall uppdateras måste du klicka på spara när du är klar.">
               <span style={{ display: "flex" }}>
-                <TuneIcon className={classes.toolIcons} />
+                <TuneIcon sx={{ paddingRight: 0.5 }} />
                 <Typography>ÄNDRA ATTRIBUT</Typography>
               </span>
             </Tooltip>
-          </ToggleButton>
+          </StyledToggleButton>
         </StyledToggleButtonGroup>
       </Grid>
     );
@@ -321,11 +295,10 @@ class Toolbar extends React.Component {
     const btnSave = (
       <Tooltip title="Spara och stäng.">
         <span>
-          <Button
+          <CreateButton
             variant="contained"
             color="primary"
             size="small"
-            className={classes.createButtons}
             onClick={this.saveCreated}
             startIcon={<SaveIcon />}
             disabled={
@@ -334,7 +307,7 @@ class Toolbar extends React.Component {
             }
           >
             <Typography>Spara</Typography>
-          </Button>
+          </CreateButton>
         </span>
       </Tooltip>
     );
@@ -342,15 +315,14 @@ class Toolbar extends React.Component {
     const btnAbort = (
       <Tooltip title="Avbryt pågående arbete.">
         <span>
-          <Button
+          <CreateButton
             variant="contained"
             size="small"
-            className={classes.createButtons}
             onClick={this.abortCreation}
             startIcon={<CancelIcon />}
           >
             <Typography>Avbryt</Typography>
-          </Button>
+          </CreateButton>
         </span>
       </Tooltip>
     );
@@ -358,14 +330,13 @@ class Toolbar extends React.Component {
     const btnRemoveSearchResult = (
       <Tooltip title="Rensa bort sökresultat från kartan.">
         <span>
-          <Button
+          <CreateButton
             variant="contained"
-            className={classes.createButtons}
             onClick={this.clearSearchResult}
             disabled={!model.markisParameters.objectId}
           >
             <Typography>Rensa</Typography>
-          </Button>
+          </CreateButton>
         </span>
       </Tooltip>
     );
@@ -377,19 +348,15 @@ class Toolbar extends React.Component {
         return (
           <div>
             <div>{editTools}</div>
-            <div className={classes.centerElements}>
+            <Centered>
               {btnAbort}
               {btnSave}
-            </div>
+            </Centered>
           </div>
         );
       } else {
         if (model.markisParameters.objectId) {
-          return (
-            <div className={classes.centerElements}>
-              {btnRemoveSearchResult}
-            </div>
-          );
+          return <Centered>{btnRemoveSearchResult}</Centered>;
         } else {
           return null;
         }
@@ -404,4 +371,4 @@ class Toolbar extends React.Component {
   }
 }
 
-export default withStyles(styles)(Toolbar);
+export default Toolbar;

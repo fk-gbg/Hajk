@@ -51,6 +51,7 @@ class MarkisConnectionModel {
     this.map.addLayer(this.searchResultLayer);
     this.searchResultLayer.set("type", "markisResultLayer");
     this.searchResultLayer.set("queryable", true);
+    this.searchResultLayer.set("ignoreInFeatureInfo", true);
   }
 
   setEditLayer(layerName) {

@@ -972,8 +972,10 @@ class MarkisConnectionModel {
   toggleLayerById = (layerIds, visible) => {
     let layers = this.getLayersByIds(layerIds);
     if (layers && layers.length > 0) {
-      layers.forEach((layer) => {
-        layer.setProperties({ visible: visible });
+      layers.forEach((layer, index) => {
+        setTimeout(() => {
+          layer.setProperties({ visible: visible });
+        }, index * 200);
       });
     }
   };

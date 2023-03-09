@@ -1,22 +1,17 @@
 import React from "react";
 import { createPortal } from "react-dom";
-import { IconButton, Grid, Typography, Tooltip } from "@material-ui/core";
-import Slider from "@material-ui/core/Slider";
-import { withStyles, withTheme } from "@material-ui/core/styles";
-import PaletteIcon from "@material-ui/icons/Palette";
+import { IconButton, Grid, Typography, Tooltip } from "@mui/material";
+import Slider from "@mui/material/Slider";
+import { styled } from "@mui/material/styles";
+import { withTheme } from "@emotion/react";
+import PaletteIcon from "@mui/icons-material/Palette";
 import Dialog from "../../../components/Dialog/Dialog";
 import { SketchPicker } from "react-color";
 
-const styles = (theme) => ({
-  colorPickerContainer: {
-    padding: theme.spacing(2),
-    paddingTop: 0,
-  },
-  strokeWidthSliderContainer: {
-    padding: theme.spacing(2),
-    paddingBottom: 0,
-  },
-});
+const ColorPickerContainer = styled(Grid)(({ theme }) => ({
+  padding: theme.spacing(2),
+  paddingTop: 0,
+}));
 
 class RGBA {
   static toString(o) {
@@ -69,11 +64,10 @@ class FeatureStyleChanger extends React.Component {
   };
 
   renderFeatureStyleToggler = () => {
-    const { classes } = this.props;
     const { strokeColor, fillColor, strokeWidth } = this.state;
     return (
       <Grid container item alignItems="center" xs={12}>
-        <Grid container item xs={6} className={classes.colorPickerContainer}>
+        <ColorPickerContainer container item xs={6}>
           <Grid item xs={12}>
             <Typography gutterBottom>Kantlinjefärg</Typography>
           </Grid>
@@ -85,8 +79,8 @@ class FeatureStyleChanger extends React.Component {
               }
             />
           </Grid>
-        </Grid>
-        <Grid container item xs={6} className={classes.colorPickerContainer}>
+        </ColorPickerContainer>
+        <ColorPickerContainer container item xs={6}>
           <Grid item xs={12}>
             <Typography gutterBottom>Fyllnadsfärg</Typography>
           </Grid>
@@ -98,8 +92,8 @@ class FeatureStyleChanger extends React.Component {
               }
             />
           </Grid>
-        </Grid>
-        <Grid item xs={12} className={classes.handleColorChange}>
+        </ColorPickerContainer>
+        <Grid item xs={12}>
           <Grid item xs={12}>
             <Typography>{`Linjetjocklek, nu ${strokeWidth}px`}</Typography>
           </Grid>
@@ -167,4 +161,4 @@ class FeatureStyleChanger extends React.Component {
   }
 }
 
-export default withStyles(styles)(withTheme(FeatureStyleChanger));
+export default withTheme(FeatureStyleChanger);

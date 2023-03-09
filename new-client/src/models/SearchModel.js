@@ -40,6 +40,8 @@ class SearchModel {
   #wfsParser = new WFS();
   #possibleSearchCombinations = new Map(); // Will hold a set of possible search combinations, so we don't have to re-create them for each source
 
+  lastSearchPhrase = "";
+
   constructor(searchPluginOptions, map, app) {
     // Validate
     if (!searchPluginOptions || !map || !app) {
@@ -67,11 +69,41 @@ class SearchModel {
     searchSources = this.getSources(),
     searchOptions = this.getSearchOptions()
   ) => {
+    searchString = searchString.trim();
+
+    // Save the latest search phrase for later use
+    this.lastSearchPhrase = searchString;
+
     const { featureCollections, errors } = await this.#getRawResults(
-      searchString.trim(), // Ensure that the search string isn't surrounded by whitespace
+      searchString, // Ensure that the search string isn't surrounded by whitespace
       searchSources,
       searchOptions
     );
+
+    // If the method was initiated by an actual search (not just autocomplete),
+    // let's send this to the analytics model.
+    if (searchOptions.initiator === "search" && searchString.length > 0) {
+      let totalHits = 0;
+      if (featureCollections) {
+        featureCollections.forEach((f) => {
+          totalHits += f.value.features.length;
+        });
+      }
+
+      // Lets focus on the first error.
+      const errorMessage = errors.length
+        ? `${errors[0].status}: ${errors[0].reason}`
+        : "";
+
+      // track!
+      this.#app.globalObserver.publish("analytics.trackEvent", {
+        eventName: "textualSearchPerformed",
+        query: searchString,
+        activeMap: this.#app.config.activeMap,
+        totalHits: totalHits,
+        errorMessage: errorMessage,
+      });
+    }
 
     return { featureCollections, errors };
   };

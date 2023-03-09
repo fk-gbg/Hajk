@@ -1,42 +1,38 @@
 import React from "react";
-import { withStyles } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
-import TextField from "@material-ui/core/TextField";
-import Typography from "@material-ui/core/Typography";
-import FormControl from "@material-ui/core/FormControl";
-import NativeSelect from "@material-ui/core/NativeSelect";
-import FormLabel from "@material-ui/core/FormLabel";
-import Input from "@material-ui/core/Input";
+import { styled } from "@mui/material/styles";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import FormControl from "@mui/material/FormControl";
+import NativeSelect from "@mui/material/NativeSelect";
+import FormLabel from "@mui/material/FormLabel";
+import Input from "@mui/material/Input";
 
-const styles = (theme) => ({
-  root: {
-    display: "flex",
-    flexWrap: "wrap",
-  },
-  text: {
-    marginLeft: theme.spacing(1),
-    display: "flex",
-    flexWrap: "wrap",
-  },
-  formControl: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-    width: "100%",
-  },
-  attributeButtons: {
-    margin: theme.spacing(1),
-    width: 90,
-  },
-  textField: {
-    marginLeft: 0,
-    marginRight: 0,
-    marginTop: 4,
-    width: "100%",
-  },
-  centerElements: {
-    textAlign: "center",
-  },
-});
+const Root = styled("div")(() => ({
+  display: "flex",
+  flexWrap: "wrap",
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  marginLeft: theme.spacing(1),
+  display: "flex",
+  flexWrap: "wrap",
+}));
+
+const StyledFormControl = styled(FormControl)(({ theme }) => ({
+  margin: theme.spacing(1),
+  minWidth: 120,
+  width: "100%",
+}));
+
+const AttributeButton = styled(Button)(({ theme }) => ({
+  margin: theme.spacing(1),
+  width: 90,
+}));
+
+const Centered = styled("div")(() => ({
+  textAlign: "center",
+}));
 
 class AttributeEditor extends React.Component {
   constructor(props) {
@@ -114,15 +110,14 @@ class AttributeEditor extends React.Component {
   }
 
   getValueMarkup(field) {
-    const { model, classes } = this.props;
+    const { model } = this.props;
     switch (field.textType) {
       case "fritext":
         return (
           <>
-            <TextField
+            <StyledTextField
               id={field.id}
               label={field.displayName}
-              className={classes.textField}
               margin="normal"
               variant="outlined"
               disabled={!model.editFeatureId}
@@ -144,8 +139,8 @@ class AttributeEditor extends React.Component {
           ));
         }
         return (
-          <div className={classes.root}>
-            <FormControl component="fieldset" className={classes.formControl}>
+          <Root>
+            <StyledFormControl component="fieldset">
               <FormLabel component="legend">{field.displayName}</FormLabel>
               <NativeSelect
                 value={this.state.formValues[field.name]}
@@ -160,8 +155,8 @@ class AttributeEditor extends React.Component {
                 </option>
                 {options}
               </NativeSelect>
-            </FormControl>
-          </div>
+            </StyledFormControl>
+          </Root>
         );
 
       case null:
@@ -176,7 +171,7 @@ class AttributeEditor extends React.Component {
   };
 
   createAttributeForm() {
-    const { model, classes } = this.props;
+    const { model } = this.props;
 
     const infoText = (
       <Typography>
@@ -185,15 +180,11 @@ class AttributeEditor extends React.Component {
     );
 
     const btnAcceptAttributes = (
-      <div className={classes.centerElements}>
-        <Button
-          variant="contained"
-          className={classes.attributeButtons}
-          onClick={this.acceptAttributes}
-        >
+      <Centered>
+        <AttributeButton variant="contained" onClick={this.acceptAttributes}>
           <Typography>Ok</Typography>
-        </Button>
-      </div>
+        </AttributeButton>
+      </Centered>
     );
 
     if (
@@ -229,4 +220,4 @@ class AttributeEditor extends React.Component {
   }
 }
 
-export default withStyles(styles)(AttributeEditor);
+export default AttributeEditor;

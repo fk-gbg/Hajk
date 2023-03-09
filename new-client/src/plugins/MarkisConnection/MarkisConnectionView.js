@@ -1,19 +1,18 @@
 import React from "react";
-import { withStyles } from "@material-ui/core/styles";
-import PropTypes from "prop-types";
-import Button from "@material-ui/core/Button";
+import { styled } from "@mui/material/styles";
+import { withSnackbar } from "notistack";
+
+import Button from "@mui/material/Button";
+
 import Informationbar from "./components/Informationbar";
 import Toolbar from "./components/Toolbar";
 import AffectedEstates from "./components/AffectedEstates";
 import AttributeEditor from "./components/AttributeEditor";
-import { withSnackbar } from "notistack";
 
-const styles = (theme) => ({
-  root: {
-    textAlign: "center",
-    padding: theme.spacing(1),
-  },
-});
+const Root = styled("div")(({ theme }) => ({
+  textAlign: "center",
+  padding: theme.spacing(1),
+}));
 
 class MarkisConnectionView extends React.Component {
   constructor(props) {
@@ -90,10 +89,9 @@ class MarkisConnectionView extends React.Component {
   }
 
   render() {
-    const { classes } = this.props;
     return (
       <>
-        <div className={classes.root}>
+        <Root>
           <Informationbar
             model={this.props.model}
             observer={this.props.localObserver}
@@ -101,7 +99,7 @@ class MarkisConnectionView extends React.Component {
             type={this.state.type}
             objectId={this.state.objectId}
           />
-        </div>
+        </Root>
         <div>
           <AffectedEstates
             model={this.props.model}
@@ -130,8 +128,4 @@ class MarkisConnectionView extends React.Component {
   }
 }
 
-MarkisConnectionView.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
-
-export default withStyles(styles)(withSnackbar(MarkisConnectionView));
+export default withSnackbar(MarkisConnectionView);

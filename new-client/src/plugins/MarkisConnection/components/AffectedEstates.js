@@ -1,36 +1,32 @@
 import React from "react";
-import Typography from "@material-ui/core/Typography";
-import { withStyles, withTheme } from "@material-ui/core/styles";
-import Accordion from "@material-ui/core/Accordion";
-import AccordionSummary from "@material-ui/core/AccordionSummary";
-import AccordionDetails from "@material-ui/core/AccordionDetails";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import Tooltip from "@material-ui/core/Tooltip";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemText from "@material-ui/core/ListItemText";
-import Grid from "@material-ui/core/Grid";
-import SentimentVeryDissatisfiedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
-import Paper from "@material-ui/core/Paper";
-import WarningIcon from "@material-ui/icons/Warning";
-import { IconButton } from "@material-ui/core";
-import Popover from "@material-ui/core/Popover";
-import ThumbUpIcon from "@material-ui/icons/ThumbUp";
+import { styled } from "@mui/material/styles";
+import { withTheme } from "@emotion/react";
+import Typography from "@mui/material/Typography";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import Tooltip from "@mui/material/Tooltip";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Grid from "@mui/material/Grid";
+import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
+import Paper from "@mui/material/Paper";
+import WarningIcon from "@mui/icons-material/Warning";
+import { IconButton } from "@mui/material";
+import Popover from "@mui/material/Popover";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 
-const styles = (theme) => ({
+const StyledAccordionDetails = styled(AccordionDetails)(() => ({
   root: {
-    width: "100%",
+    padding: 0,
   },
-  details: {
-    maxHeight: 300,
-    overflow: "auto",
-  },
-  errorContainer: {
-    padding: theme.spacing(1),
-  },
-});
+  maxHeight: 300,
+  overflow: "auto",
+}));
 
-const StyledAccordionSummary = withStyles((theme) => ({
+const StyledAccordionSummary = styled(AccordionSummary)(({ theme }) => ({
   root: {
     backgroundColor: theme.palette.background.default,
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -40,13 +36,11 @@ const StyledAccordionSummary = withStyles((theme) => ({
     minHeight: 10,
     maxHeight: 40,
   },
-}))(AccordionSummary);
+}));
 
-const StyledAccordionDetails = withStyles((theme) => ({
-  root: {
-    padding: 0,
-  },
-}))(AccordionDetails);
+const ErrorContainer = styled(Grid)(({ theme }) => ({
+  padding: theme.spacing(1),
+}));
 
 class AffectedEstates extends React.Component {
   constructor(props) {
@@ -154,7 +148,7 @@ class AffectedEstates extends React.Component {
     const { theme } = this.props;
     return {
       width: "100%",
-      borderLeft: `${theme.spacing(1.5)}px solid ${this.state.color}`,
+      borderLeft: `${theme.spacing(1.5)} solid ${this.state.color}`,
     };
   };
 
@@ -171,6 +165,7 @@ class AffectedEstates extends React.Component {
           onClick={(e) => {
             this.togglePopover(e);
           }}
+          size="large"
         >
           <WarningIcon />
         </IconButton>
@@ -185,6 +180,7 @@ class AffectedEstates extends React.Component {
           onClick={(e) => {
             this.togglePopover(e);
           }}
+          size="large"
         >
           <ThumbUpIcon style={{ color: this.state.color }} fontSize="small" />
         </IconButton>
@@ -234,7 +230,7 @@ class AffectedEstates extends React.Component {
       >
         <Paper
           style={{
-            border: `${theme.spacing(0.1)}px solid ${color}`,
+            border: `${theme.spacing(0.1)} solid ${color}`,
             padding: theme.spacing(1),
             maxWidth: 300,
           }}
@@ -248,7 +244,7 @@ class AffectedEstates extends React.Component {
 
   renderEstateList = () => {
     const { contractInformation } = this.state;
-    const { classes, theme } = this.props;
+    const { theme } = this.props;
     if (!contractInformation) {
       return null;
     }
@@ -261,9 +257,9 @@ class AffectedEstates extends React.Component {
           <ListItem
             key={"total"}
             style={{
-              borderTop: `${theme.spacing(0.1)}px solid ${this.state.color}`,
-              borderBottom: `${theme.spacing(0.1)}px solid ${this.state.color}`,
-              borderRight: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+              borderTop: `${theme.spacing(0.1)} solid ${this.state.color}`,
+              borderBottom: `${theme.spacing(0.1)} solid ${this.state.color}`,
+              borderRight: `${theme.spacing(0.1)} solid ${this.state.color}`,
             }}
             alignItems="flex-start"
           >
@@ -323,11 +319,7 @@ class AffectedEstates extends React.Component {
     }
     if (contractInformation.error) {
       return (
-        <Grid
-          container
-          alignContent="center"
-          className={classes.errorContainer}
-        >
+        <ErrorContainer container alignContent="center">
           <Grid item xs={12} style={{ alignItems: "center", display: "flex" }}>
             <Typography variant="h6">Ojdå...</Typography>
             <SentimentVeryDissatisfiedIcon />
@@ -335,7 +327,7 @@ class AffectedEstates extends React.Component {
           <Grid item xs={12}>
             <Paper
               style={{
-                border: `${theme.spacing(0.1)}px solid ${this.state.color}`,
+                border: `${theme.spacing(0.1)} solid ${this.state.color}`,
                 padding: theme.spacing(1),
               }}
               elevation={3}
@@ -348,13 +340,13 @@ class AffectedEstates extends React.Component {
               </Typography>
             </Paper>
           </Grid>
-        </Grid>
+        </ErrorContainer>
       );
     }
   };
 
   renderAffectedEstates = () => {
-    const { model, classes } = this.props;
+    const { model } = this.props;
 
     if (
       model.markisParameters.userMode === "Create" &&
@@ -372,7 +364,7 @@ class AffectedEstates extends React.Component {
                 <Typography>BERÖRDA FASTIGHETER</Typography>
               </StyledAccordionSummary>
             </Tooltip>
-            <StyledAccordionDetails className={classes.details}>
+            <StyledAccordionDetails>
               {this.renderEstateList()}
             </StyledAccordionDetails>
           </Accordion>
@@ -389,4 +381,4 @@ class AffectedEstates extends React.Component {
   }
 }
 
-export default withStyles(styles)(withTheme(AffectedEstates));
+export default withTheme(AffectedEstates);

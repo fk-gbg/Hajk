@@ -1,14 +1,12 @@
 import React from "react";
-import Typography from "@material-ui/core/Typography";
-import Chip from "@material-ui/core/Chip";
-import { withStyles } from "@material-ui/core/styles";
+import Typography from "@mui/material/Typography";
+import Chip from "@mui/material/Chip";
+import { styled } from "@mui/material/styles";
 import FeatureStyleChanger from "./FeatureStyleChanger";
 
-const styles = (theme) => ({
-  chip: {
-    margin: theme.spacing(1),
-  },
-});
+const StyledChip = styled(Chip)(({ theme }) => ({
+  margin: theme.spacing(1),
+}));
 
 class Informationbar extends React.Component {
   constructor(props) {
@@ -20,15 +18,14 @@ class Informationbar extends React.Component {
   }
 
   renderInformation() {
-    const { classes, model } = this.props;
+    const { model } = this.props;
 
     if (this.props.userMode === "Create" && this.props.type === "Contract") {
       return (
         <div>
-          <Chip
+          <StyledChip
             label={`Uppdaterar ${this.props.objectId}`}
             color="primary"
-            className={classes.chip}
             variant="outlined"
           />
           <FeatureStyleChanger model={model} />
@@ -40,12 +37,11 @@ class Informationbar extends React.Component {
     ) {
       return (
         <div>
-          <Chip
+          <StyledChip
             label={`Skapar ${model.options.displayConnections[
               this.props.type
             ].toLowerCase()}`}
             color="primary"
-            className={classes.chip}
             variant="outlined"
           />
           <FeatureStyleChanger model={model} />
@@ -83,10 +79,9 @@ class Informationbar extends React.Component {
     } else {
       return (
         <div>
-          <Chip
+          <StyledChip
             label={`Du visar ingen yta just nu.`}
             color="primary"
-            className={classes.chip}
             variant="outlined"
           />
         </div>
@@ -99,4 +94,4 @@ class Informationbar extends React.Component {
   }
 }
 
-export default withStyles(styles)(Informationbar);
+export default Informationbar;

@@ -2,7 +2,6 @@ import * as signalR from "@microsoft/signalr";
 import intersect from "@turf/intersect";
 import kinks from "@turf/kinks";
 import { WFS } from "ol/format";
-import GeometryType from "ol/geom/GeometryType";
 import IsLike from "ol/format/filter/IsLike";
 import Intersects from "ol/format/filter/Intersects";
 import Or from "ol/format/filter/Or";
@@ -52,6 +51,7 @@ class MarkisConnectionModel {
     this.map.addLayer(this.searchResultLayer);
     this.searchResultLayer.set("type", "markisResultLayer");
     this.searchResultLayer.set("queryable", true);
+    this.searchResultLayer.set("ignoreInFeatureInfo", true);
   }
 
   setEditLayer(layerName) {
@@ -110,7 +110,7 @@ class MarkisConnectionModel {
         if (response.features.length === 1) {
           const estateFeature = response.features[0];
           const geometryType = estateFeature.getGeometry().getType();
-          if (geometryType === GeometryType.POLYGON) {
+          if (geometryType === "Polygon") {
             let feature = new Feature({});
             feature.setGeometryName(this.geometryName);
             feature.setGeometry(estateFeature.getGeometry());
@@ -632,7 +632,7 @@ class MarkisConnectionModel {
         ) {
           createdFeatures.push(feature);
           let geom = feature.getGeometry();
-          if (geom.getType() === GeometryType.POLYGON) {
+          if (geom.getType() === "Polygon") {
             totalArea += Math.floor(geom.getArea());
           }
           promises.push(this.lookupEstate(estateSource, feature));
@@ -650,9 +650,7 @@ class MarkisConnectionModel {
               );
               let affectedArea = 0;
               createdFeatures.forEach((drawnArea) => {
-                if (
-                  drawnArea.getGeometry().getType() === GeometryType.POLYGON
-                ) {
+                if (drawnArea.getGeometry().getType() === "Polygon") {
                   try {
                     let interSection = intersect(
                       parser.writeFeatureObject(drawnArea),
@@ -663,8 +661,9 @@ class MarkisConnectionModel {
                         parser.readFeature(interSection);
                       if (
                         intersectionFeature.getGeometry().getType() ===
-                          GeometryType.POLYGON ||
-                        GeometryType.MULTI_POLYGON
+                          "Polygon" ||
+                        intersectionFeature.getGeometry().getType() ===
+                          "MultiPolygon"
                       ) {
                         try {
                           let tempArea = intersectionFeature
@@ -973,8 +972,10 @@ class MarkisConnectionModel {
   toggleLayerById = (layerIds, visible) => {
     let layers = this.getLayersByIds(layerIds);
     if (layers && layers.length > 0) {
-      layers.forEach((layer) => {
-        layer.setProperties({ visible: visible });
+      layers.forEach((layer, index) => {
+        setTimeout(() => {
+          layer.setProperties({ visible: visible });
+        }, index * 200);
       });
     }
   };

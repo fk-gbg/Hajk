@@ -66,6 +66,8 @@ namespace MapService.Models
         public bool drawerVisibleMobile { get; set; }
 
         public bool drawerPermanent { get; set; }
+        
+        public bool drawerStatic { get; set; }
 
         public string activeDrawerOnStart { get; set; }
 
@@ -105,7 +107,9 @@ namespace MapService.Models
 
         public bool zoomDelta { get; set; }
 
-        public bool zoomDuration { get; set; }
+        public Nullable<int> zoomDuration { get; set; }
+
+        public object linkInDrawer { get; set; }
 
         public bool showRecentlyUsedPlugins { get; set; }
 

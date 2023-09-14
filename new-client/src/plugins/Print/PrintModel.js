@@ -21,6 +21,7 @@ import ImageWMS from "ol/source/ImageWMS";
 import { ROBOTO_NORMAL } from "./constants";
 export default class PrintModel {
   constructor(settings) {
+    this.proxy = settings.proxy;
     this.map = settings.map;
     this.dims = settings.dims;
     this.logoUrl = settings.options.logo || "";
@@ -29,6 +30,8 @@ export default class PrintModel {
     this.includeImageBorder = settings.options.includeImageBorder;
     this.northArrowMaxWidth = settings.options.northArrowMaxWidth;
     this.scales = settings.options.scales;
+    this.scaleMeters = settings.options.scaleMeters;
+    this.scaleBarLengths = this.calculateScaleBarLengths();
     this.copyright = settings.options.copyright || "";
     this.date = settings.options.date || "";
     this.disclaimer = settings.options.disclaimer || "";
@@ -68,22 +71,21 @@ export default class PrintModel {
     });
   }
 
-  scaleBarLengths = {
-    100: 2.5,
-    200: 5,
-    250: 10,
-    400: 20,
-    500: 25,
-    1000: 50,
-    2000: 75,
-    2500: 100,
-    5000: 250,
-    10000: 500,
-    25000: 1000,
-    50000: 2500,
-    100000: 5000,
-    200000: 10000,
+  defaultScaleBarLengths = {
+    200: 10,
+    500: 50,
+    1000: 100,
+    2000: 200,
+    5000: 500,
+    10000: 1000,
+    20000: 2000,
+    50000: 5000,
+    100000: 10000,
+    200000: 20000,
+    300000: 20000,
   };
+
+  fakeBase = "https://hajk.js.internal";
 
   previewLayer = null;
   previewFeature = null;
@@ -98,6 +100,17 @@ export default class PrintModel {
 
   // A flag that's used in "rendercomplete" to ensure that user has not cancelled the request
   pdfCreationCancelled = null;
+
+  calculateScaleBarLengths() {
+    if (this.scales.length === this.scaleMeters.length) {
+      return this.scales.reduce((acc, curr, index) => {
+        acc[curr] = this.scaleMeters[index];
+        return acc;
+      }, {});
+    } else {
+      return this.defaultScaleBarLengths;
+    }
+  }
 
   addPreviewLayer() {
     this.previewLayer = new Vector({
@@ -373,6 +386,7 @@ export default class PrintModel {
    */
   getFittingScaleBarLength = (scale) => {
     const length = this.scaleBarLengths[scale];
+
     if (length) {
       return length;
     } else {
@@ -393,7 +407,195 @@ export default class PrintModel {
       scaleBarLengthMeters /= 1000;
       units = "km";
     }
-    return `${Number(scaleBarLengthMeters).toLocaleString("sv-SE")} ${units}`;
+    return `${Number(scaleBarLengthMeters).toLocaleString()} ${units}`;
+  };
+
+  // Divides scaleBarLength with correct number to get divisions lines every 1, 10 or 100 m or km.
+  // Example 1: If scaleBarLengthMeters is 1000 we divide by 10 to get 10 division lines every 100 meters.
+  // Example 2: If _scaleBarLengthMeters is 500 we divide by 5 to get 5 division lines every 10 meters.
+  getDivLinesArrayAndDivider = (scaleBarLengthMeters, scaleBarLength) => {
+    const scaleBarLengthMetersStr = scaleBarLengthMeters.toString();
+    // Here we get the lengthMeters first two numbers.
+    const scaleBarFirstDigits = parseInt(
+      scaleBarLengthMetersStr.substring(0, 2)
+    );
+    // We want to check if lengthMeters starts with 10 through 19 to make sure we divide correctly later.
+    const startsWithDoubleDigits =
+      scaleBarFirstDigits >= 10 && scaleBarFirstDigits <= 19;
+
+    // Here we set the scaleLength variable to the length of lengthMeters.
+    // For example, if lengthMeters is 1000 we want the scaleLength to be 10.
+    // And if lengthMeters is 500 we want the scaleLength to be 5.
+    const scaleLength = startsWithDoubleDigits
+      ? scaleBarLengthMetersStr.length - 2
+      : scaleBarLengthMetersStr.length - 1;
+
+    // Here we set the divider by dividing lengthMeters with 10 to the power of scaleLength...
+    // For example, if lengthMeters is 500 we want to divide it by 5 to get 5 division lines, each 100 meters...
+    // and if lengthMeters is 1 000 we want to divide it by 100.
+    const divider = scaleBarLengthMeters / Math.pow(10, scaleLength);
+    // Finally, we want to calculate the number of pixels between each division line on the scalebar
+    const divLinePixelsCount = scaleBarLength / divider;
+
+    // We loop through and fill the divLinesArray with the divLinePixelsCount...
+    // to get the correct division line distribution on the scalebar
+    let divLinesArray = [];
+    for (
+      let divLine = divLinePixelsCount;
+      divLine <= scaleBarLength;
+      divLine += divLinePixelsCount
+    ) {
+      divLinesArray.push(divLine);
+    }
+
+    return { divLinesArray, divider };
+  };
+
+  addDividerLinesAndTexts = (props) => {
+    this.drawDividerLines(props);
+
+    // We want to make sure that given scale is a set scale in our admin settings...
+    // to ensure the text has correct spacing
+    if (this.scaleBarLengths[props.scale]) this.addDividerTexts(props);
+  };
+
+  drawDividerLines({
+    pdf,
+    scaleBarPosition,
+    scaleBarLength,
+    color,
+    scaleBarLengthMeters,
+  }) {
+    // Set line width and color
+    pdf.setLineWidth(0.25).setDrawColor(color);
+
+    // Draw starting, finish, and through lines
+    pdf.line(
+      scaleBarPosition.x,
+      scaleBarPosition.y + 3,
+      scaleBarPosition.x + scaleBarLength,
+      scaleBarPosition.y + 3
+    );
+    pdf.line(
+      scaleBarPosition.x,
+      scaleBarPosition.y + 1,
+      scaleBarPosition.x,
+      scaleBarPosition.y + 5
+    );
+    pdf.line(
+      scaleBarPosition.x + scaleBarLength,
+      scaleBarPosition.y + 1,
+      scaleBarPosition.x + scaleBarLength,
+      scaleBarPosition.y + 5
+    );
+
+    // Here we get number of lines we will draw below
+    const { divLinesArray } = this.getDivLinesArrayAndDivider(
+      scaleBarLengthMeters,
+      scaleBarLength
+    );
+
+    // Here we draw the dividing lines marking 10 (or 100) meters each
+    divLinesArray.forEach((divLine) => {
+      const largerMiddleLineValue =
+        divLinesArray.length === 10 && divLine === divLinesArray[4] ? 0.7 : 0;
+      pdf.line(
+        scaleBarPosition.x + divLine,
+        scaleBarPosition.y + 1.9 - largerMiddleLineValue,
+        scaleBarPosition.x + divLine,
+        scaleBarPosition.y + 4.1 + largerMiddleLineValue
+      );
+    });
+
+    // If the space between 0 and the first number on the scalebar is long enough...
+    // we draw additional lines between 0 and the first number
+    if (divLinesArray[0] > 10) {
+      const numLine = divLinesArray[0] / 5;
+      for (
+        let divLine = numLine;
+        divLine < divLinesArray[0];
+        divLine += numLine
+      ) {
+        pdf.line(
+          scaleBarPosition.x + divLine,
+          scaleBarPosition.y + 2.25,
+          scaleBarPosition.x + divLine,
+          scaleBarPosition.y + 3.85
+        );
+      }
+    }
+  }
+
+  addDividerTexts = ({
+    pdf,
+    scaleBarPosition,
+    scaleBarLength,
+    scaleBarLengthMeters,
+    color,
+  }) => {
+    pdf.setFontSize(8);
+    pdf.setTextColor(color);
+
+    // Here we set the number 0 at the start of the scalebar
+    pdf.text("0", scaleBarPosition.x - 0.7, scaleBarPosition.y + 8);
+
+    // Here we convert the scaleBarLengthMeters to km if above 1000
+    const calculatedScaleBarLengthMeters =
+      scaleBarLengthMeters > 1000
+        ? (scaleBarLengthMeters / 1000).toString()
+        : scaleBarLengthMeters;
+
+    // Here we get number of lines we will draw below
+    const { divLinesArray, divider } = this.getDivLinesArrayAndDivider(
+      scaleBarLengthMeters,
+      scaleBarLength
+    );
+
+    const scaleBarHasSpace = divLinesArray[0] > 10 && scaleBarLengthMeters > 10;
+
+    // Here we add the first number after 0
+    let divNr = calculatedScaleBarLengthMeters / divider;
+    let divNrString = divNr.toLocaleString();
+    pdf.text(
+      divNrString,
+      scaleBarPosition.x + divLinesArray[0] - divNrString.length,
+      scaleBarPosition.y + 8
+    );
+
+    // Here we add the middle number or if no middle exists...
+    // a number that's close to the middle
+
+    // let midIndex =
+    //   divLinesArray.length % 2 === 0
+    //     ? divLinesArray.length / 2
+    //     : Math.floor(divLinesArray.length / 2);
+
+    const midIndex = Math.round(divLinesArray.length / 2);
+
+    divNr = (calculatedScaleBarLengthMeters / divider) * midIndex;
+    divNrString = divNr.toLocaleString();
+    pdf.text(
+      divNrString,
+      scaleBarPosition.x + divLinesArray[midIndex - 1] - divNrString.length,
+      scaleBarPosition.y + 8
+    );
+
+    // Here we add a number to the first additional division line but only if scaleBar has space
+    if (scaleBarHasSpace) {
+      const dividerNrPosition = divLinesArray[0] / 5;
+      divNr = calculatedScaleBarLengthMeters / divider / 5;
+      divNrString = divNr.toLocaleString();
+
+      // We need to make sure correct placement if divNr is a decimal number
+      const dividerStrLength =
+        divNr % 1 !== 0 ? divNrString.length - 1 : divNrString.length;
+
+      pdf.text(
+        divNrString,
+        scaleBarPosition.x + dividerNrPosition - dividerStrLength,
+        scaleBarPosition.y + 8
+      );
+    }
   };
 
   drawScaleBar = (
@@ -415,6 +617,7 @@ export default class PrintModel {
       scaleBarPosition.x + scaleBarLength + 1,
       scaleBarPosition.y + 4
     );
+
     pdf.setFontSize(10);
     pdf.text(
       `Skala: ${this.getUserFriendlyScale(
@@ -423,34 +626,17 @@ export default class PrintModel {
         orientation === "landscape" ? "liggande" : "stående"
       })`,
       scaleBarPosition.x,
-      scaleBarPosition.y + 1
+      scaleBarPosition.y - 1
     );
 
-    pdf.setDrawColor(color);
-    pdf.line(
-      scaleBarPosition.x,
-      scaleBarPosition.y + 3,
-      scaleBarPosition.x + scaleBarLength,
-      scaleBarPosition.y + 3
-    );
-    pdf.line(
-      scaleBarPosition.x,
-      scaleBarPosition.y + 2,
-      scaleBarPosition.x,
-      scaleBarPosition.y + 4
-    );
-    pdf.line(
-      scaleBarPosition.x + scaleBarLength,
-      scaleBarPosition.y + 2,
-      scaleBarPosition.x + scaleBarLength,
-      scaleBarPosition.y + 4
-    );
-    pdf.line(
-      scaleBarPosition.x + scaleBarLength / 2,
-      scaleBarPosition.y + 2.5,
-      scaleBarPosition.x + scaleBarLength / 2,
-      scaleBarPosition.y + 3.5
-    );
+    this.addDividerLinesAndTexts({
+      pdf,
+      scale,
+      scaleBarLengthMeters,
+      scaleBarPosition,
+      scaleBarLength,
+      color,
+    });
   };
 
   addScaleBar = (
@@ -603,6 +789,7 @@ export default class PrintModel {
       const imageLayer = new ImageLayer({
         opacity: layerOpacity,
         source: imageSource,
+        zIndex: layer.getZIndex(),
       });
       // Finally we add the new layer to the map... First we have to check where
       // the original layer was placed (so that it keeps its draw-order).
@@ -747,6 +934,21 @@ export default class PrintModel {
     }
   };
 
+  // Returns an URL object from the src string, prepended with proxy if any.
+  // Uses a fake base for resolving relative URL:s so we can detect this when
+  // resolving the final URL to string (and remove it).
+  // This let's us work with NodeJS URL API with relative URL:s.
+  getURL = (src) => {
+    const location = (this.proxy || "") + src;
+    return new URL(location, this.fakeBase);
+  };
+
+  // Returns a string with the complete URL, removing fake base if any.
+  toURLString = (url) => {
+    const urlString = url.toString();
+    return urlString.replace(this.fakeBase, "");
+  };
+
   // Returns an array of objects containing information regarding the tiles
   // that should be created to comply with the supplied 'MAX_TILE_SIZE' and
   // also 'fill' the image.
@@ -797,7 +999,7 @@ export default class PrintModel {
       // into consideration).
       source.setImageLoadFunction((image, src) => {
         // Let's create an URL-object so that we can easily grab and alter search-parameters.
-        const url = new URL(src);
+        const url = this.getURL(src);
         const searchParams = url.searchParams;
         // We have to make sure to update the search-parameters to include dpi-settings.
         searchParams.set("DPI", options.resolution);
@@ -826,13 +1028,16 @@ export default class PrintModel {
           // Then, for each tile-information-object, we'll create a request-url containing the
           // information that we've gathered (such as the size and bounding-box).
           for (const tile of tiles) {
-            const tileUrl = new URL(url.toString());
+            const tileUrl = this.getURL(url.toString());
             tileUrl.searchParams.set("BBOX", tile.bBox);
             tileUrl.searchParams.set("HEIGHT", tile.tileHeight);
             tileUrl.searchParams.set("WIDTH", tile.tileWidth);
             // Then we'll fetch the images from the WMS-server
             promises.push(
-              this.loadImageTile(canvas, { ...tile, url: tileUrl.toString() })
+              this.loadImageTile(canvas, {
+                ...tile,
+                url: this.toURLString(tileUrl),
+              })
             );
           }
           // When all image-promises has settled, we can set the image to the canvas on which we've
@@ -842,7 +1047,7 @@ export default class PrintModel {
           });
         } else {
           // If the request is not too complex, we can fetch it right away.
-          image.getImage().src = url.toString();
+          image.getImage().src = this.toURLString(url);
         }
       });
     } catch (error) {
@@ -1370,6 +1575,6 @@ export default class PrintModel {
    * @returns {string} Input parameter, prefixed by "1:" and with spaces as thousands separator, e.g "5000" -> "1:5 000".
    */
   getUserFriendlyScale = (scale) => {
-    return `1:${Number(scale).toLocaleString("sv-SE")}`;
+    return `1:${Number(scale).toLocaleString()}`;
   };
 }

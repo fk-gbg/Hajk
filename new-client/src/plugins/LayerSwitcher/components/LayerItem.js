@@ -87,6 +87,7 @@ class LayerItem extends React.PureComponent {
     this.infoText = layerInfo.infoText;
     this.infoUrl = layerInfo.infoUrl;
     this.infoUrlText = layerInfo.infoUrlText;
+    this.infoOpenDataLink = layerInfo.infoOpenDataLink;
     this.infoOwner = layerInfo.infoOwner;
     this.localObserver = layer.localObserver;
     this.showAttributeTableButton = layerInfo.showAttributeTableButton || false;
@@ -215,8 +216,25 @@ class LayerItem extends React.PureComponent {
 
   showZoomSnack() {
     if (this.zoomWarningSnack) return;
+
+    // We're fetching layerInfo object from the layer object.
+    const layerInfo = this.props.layer.get("layerInfo");
+
+    // If layerInfo is defined, we get layersInfo from it.
+    // Otherwise, layersInfo is set as undefined.
+    const layersInfo = layerInfo ? layerInfo.layersInfo : undefined;
+
+    // If the layer is a LayerGroupItem (meaning it contains more than one object in the "layersInfo" array),
+    // then no message should be displayed.
+    // Here we also ensure that layersInfo is defined and contains more than one layer
+    // before trying to access its keys. This prevents a TypeError when layersInfo
+    // is undefined.
+    if (layersInfo && Object.keys(layersInfo).length > 1) {
+      return;
+    }
+
     this.zoomWarningSnack = this.props.enqueueSnackbar(
-      `Lagret "${this.caption}" visas endast vid specifika skalor.`,
+      `Lagret "${this.caption}"  är inte synligt vid aktuell zoomnivå.`,
       {
         variant: "warning",
         preventDuplicate: true,
@@ -438,9 +456,31 @@ class LayerItem extends React.PureComponent {
     if (this.infoUrl) {
       return (
         <InfoTextContainer>
-          <a href={this.infoUrl} target="_blank" rel="noopener noreferrer">
-            {this.infoUrlText || this.infoUrl}
-          </a>
+          <Typography variant="body2" component="div" sx={{ fontWeight: 500 }}>
+            <a href={this.infoUrl} target="_blank" rel="noopener noreferrer">
+              {this.infoUrlText || this.infoUrl}
+            </a>
+          </Typography>
+        </InfoTextContainer>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  renderOpenDataLink() {
+    if (this.infoOpenDataLink) {
+      return (
+        <InfoTextContainer>
+          <Typography variant="body2" component="div" sx={{ fontWeight: 500 }}>
+            <a
+              href={this.infoOpenDataLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Öppna data: {this.caption}
+            </a>
+          </Typography>
         </InfoTextContainer>
       );
     } else {
@@ -469,6 +509,7 @@ class LayerItem extends React.PureComponent {
         <div>
           {this.renderInfo()}
           {this.renderMetadataLink()}
+          {this.renderOpenDataLink()}
           {this.renderOwner()}
           <div>{this.renderChapterLinks(this.props.chapters || [])}</div>
         </div>
@@ -607,7 +648,11 @@ class LayerItem extends React.PureComponent {
           >
             <Grid item>{this.getLayerToggler()}</Grid>
             {this.legendIcon && this.renderLegendIcon()}
-            <Caption>{this.caption}</Caption>
+            <Caption
+              sx={{ fontWeight: this.state.visible ? "bold" : "normal" }}
+            >
+              {this.caption}
+            </Caption>
           </Grid>
           <LayerButtonsContainer>
             {layer.isFakeMapLayer ? null : (

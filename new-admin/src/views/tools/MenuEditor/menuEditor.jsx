@@ -56,6 +56,9 @@ const styles = (theme) => ({
 
 class ToolOptions extends Component {
   state = {
+    availableDocuments: [],
+    folder: "",
+    folders: [],
     textAreacolorpickerEnabled: false,
     active: false,
     index: 0,
@@ -83,6 +86,7 @@ class ToolOptions extends Component {
     draggingEnabled: false,
     searchImplemented: true,
     enablePrint: true,
+    pdfLinks: [{ name: "", link: "" }],
     closePanelOnMapLinkOpen: false,
     displayLoadingOnMapLinkOpen: false,
     tableOfContents: {
@@ -90,6 +94,7 @@ class ToolOptions extends Component {
       expanded: false,
       printMode: "none",
       chapterLevelsToShow: 2,
+      chapterLevelsToShowForPrint: 2,
       title: "Innehållsförteckning",
     },
     defaultDocumentColorSettings: {
@@ -102,17 +107,47 @@ class ToolOptions extends Component {
   menuConfig = {
     menu: [],
   };
-  availableDocuments = [];
 
   constructor(props) {
     super(props);
     this.type = "documenthandler";
     this.mapSettingsModel = props.model;
     this.menuEditorModel = this.getMenuEditorModel();
-    this.menuEditorModel.listAllAvailableDocuments().then((list) => {
-      this.availableDocuments = list;
+    this.menuEditorModel.listAllAvailableDocuments(this.state.folder).then((list) => {
+      this.setState({
+        availableDocuments: list,
+      })
     });
+    
+    this.useDocumentFolders = this.menuEditorModel.config.use_document_folders ?? false;
+
+    if (this.useDocumentFolders) {
+      this.menuEditorModel.loadFolders().then((list) => {
+        this.setState({
+          folders: list,
+        })
+      });
+    }
   }
+
+  handleFolderSelection = (selectedFolder) => {
+    this.setState({ folder: selectedFolder }, () => {
+      this.menuEditorModel
+        .listAllAvailableDocuments(this.state.folder)
+        .then((list) => {
+          this.setState(
+            {
+              availableDocuments: list,
+            },
+            () => {
+              this.updateTreeValidation(this.state.tree);
+              // I hate myself... This should be avoided at all costs!!!
+              this.forceUpdate();
+            }
+          );
+        });
+    });
+  };
 
   handleColorChange = (target, color) => {
     this.setState((prevState) => ({
@@ -160,6 +195,7 @@ class ToolOptions extends Component {
         draggingEnabled: tool.options.draggingEnabled || false,
         searchImplemented: tool.options.searchImplemented,
         enablePrint: tool.options.enablePrint,
+        pdfLinks: tool.options.pdfLinks || [{ name: "", link: "" }],
         closePanelOnMapLinkOpen: tool.options.closePanelOnMapLinkOpen,
         displayLoadingOnMapLinkOpen:
           tool.options.displayLoadingOnMapLinkOpen || false,
@@ -254,6 +290,7 @@ class ToolOptions extends Component {
         height: this.state.height,
         searchImplemented: this.state.searchImplemented,
         enablePrint: this.state.enablePrint,
+        pdfLinks: this.state.pdfLinks,
         closePanelOnMapLinkOpen: this.state.closePanelOnMapLinkOpen,
         displayLoadingOnMapLinkOpen: this.state.displayLoadingOnMapLinkOpen,
         documentOnStart: this.state.documentOnStart,
@@ -453,11 +490,15 @@ class ToolOptions extends Component {
         deleteMenuItem={this.deleteMenuItem}
         options={this.state}
         model={this.menuEditorModel}
-        availableDocuments={this.availableDocuments}
+        availableDocuments={this.state.availableDocuments}
+        folders={this.state.folders}
         menuItem={menuItem}
         updateValidationForTreeNode={this.updateValidationForTreeNode}
         valid={this.menuEditorModel.isSelectionValid(menuItem, children)}
         treeNodeId={key}
+        onFolderSelection={this.handleFolderSelection}
+        folder={this.state.folder}
+        useDocumentFolders={this.useDocumentFolders}
       ></TreeRow>
     );
   };
@@ -610,6 +651,31 @@ class ToolOptions extends Component {
       this.addHeaderRowToTreeStructure(treeData);
       this.setState({ openMenuEditor: true, tree: treeData });
     });
+  };
+
+  handlePdfInputChange = (event, pdfLink, key) => {
+    const value = event.target.value;
+    const index = this.state.pdfLinks.findIndex((link) => link === pdfLink);
+    pdfLink[key] = value;
+
+    let newPdfLinks = [...this.state.pdfLinks];
+    newPdfLinks[index] = pdfLink;
+    this.setState({ pdfLinks: newPdfLinks });
+  };
+
+  addPdfLinkRow = () => {
+    let newPdfLinks = [...this.state.pdfLinks];
+    newPdfLinks.push({ name: "", link: "" });
+    this.setState({ pdfLinks: newPdfLinks });
+  };
+
+  removePdfLinkRow = (event, index) => {
+    if (this.state.pdfLinks.length <= 1) {
+      return;
+    }
+    let newPdfLinks = [...this.state.pdfLinks];
+    newPdfLinks.splice(index, 1);
+    this.setState({ pdfLinks: newPdfLinks });
   };
 
   render() {
@@ -844,6 +910,70 @@ class ToolOptions extends Component {
             <label htmlFor="enablePrint">Utskrift aktiverad</label>
           </div>
           <div>
+            {this.state.pdfLinks &&
+              this.state.pdfLinks.map((pdfLink, index) => (
+                <div
+                  key={`${index}_${pdfLink.name}_${pdfLink.link}`}
+                  style={{ display: "flex" }}
+                >
+                  <div>
+                    <label htmlFor={`pdfLink_${index}`}>
+                      Bilaga {index + 1}
+                    </label>
+                    <input
+                      id={`pdfLink_${index}`}
+                      name="name"
+                      type="text"
+                      defaultValue={pdfLink.name}
+                      style={{ maxWidth: "220px" }}
+                      placeholder="Namn..."
+                      onBlur={(e) => {
+                        this.handlePdfInputChange(e, pdfLink, "name");
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      name="link"
+                      defaultValue={pdfLink.link}
+                      style={{ maxWidth: "250px" }}
+                      placeholder="Länk..."
+                      onBlur={(e) => {
+                        this.handlePdfInputChange(e, pdfLink, "link");
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-default"
+                      style={{ fontWeight: "bold" }}
+                      disabled={this.state.pdfLinks.length === 1}
+                      onClick={(e) => {
+                        this.removePdfLinkRow(e, index);
+                      }}
+                    >
+                      -
+                    </button>
+                    {index === this.state.pdfLinks.length - 1 ? (
+                      <button
+                        type="button"
+                        className="btn btn-default"
+                        style={{ fontWeight: "bold", marginLeft: "5px" }}
+                        onClick={(e) => {
+                          this.addPdfLinkRow();
+                        }}
+                      >
+                        +
+                      </button>
+                    ) : (
+                      ""
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          <div>
             <input
               id="closePanelOnMapLinkOpen"
               name="closePanelOnMapLinkOpen"
@@ -967,6 +1097,33 @@ class ToolOptions extends Component {
                 }));
               }}
               value={this.state.tableOfContents.chapterLevelsToShow}
+            />
+          </div>
+          <div>
+            <label htmlFor="chapterLevelsToShowForPrint">
+              Antal kapitelnivår för utskrift{" "}
+              <i
+                className="fa fa-question-circle"
+                data-toggle="tooltip"
+                title="Antal kapitelnivåer som ska ingå i innehållsförteckningen för utskritft"
+              />
+            </label>
+            <input
+              id="chapterLevelsToShowForPrint"
+              name="chapterLevelsToShowForPrint"
+              type="number"
+              min="0"
+              className="control-fixed-width"
+              onChange={(e) => {
+                const value = e.target.value;
+                this.setState((prevState) => ({
+                  tableOfContents: {
+                    ...prevState.tableOfContents,
+                    chapterLevelsToShowForPrint: value,
+                  },
+                }));
+              }}
+              value={this.state.tableOfContents.chapterLevelsToShowForPrint}
             />
           </div>
           <div>

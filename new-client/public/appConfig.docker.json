@@ -1,6 +1,5 @@
 {
   "mapserviceBase": "/api/v1",
-  "experimentalNewApi": true,
   "proxy": "",
   "searchProxy": "",
   "defaultMap": "map_1",

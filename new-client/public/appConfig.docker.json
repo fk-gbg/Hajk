@@ -1,5 +1,5 @@
 {
-  "mapserviceBase": "/api/v1",
+  "mapserviceBase": "/api/v2",
   "proxy": "",
   "searchProxy": "",
   "defaultMap": "map_1",

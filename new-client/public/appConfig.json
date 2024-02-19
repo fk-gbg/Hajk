@@ -1,5 +1,5 @@
 {
-  "mapserviceBase": "/api/v2",
+  "mapserviceBase": "http://localhost:3002/api/v2",
   "defaultMap": "map_1",
   "showExperimentalLanguageSwitcher": false,
   "lang": "en",

@@ -5,7 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### BREAKING
+
+- This release marks the removal of the legacy V1 API (`/api/v1`) in both the NodeJS backend and the old .NET 4.5 backend (refer to the _Removed_ section below). Client UI is now V2-compatible only, as it requires the consolidated loading method. This means that you may need to update your configuration. Refer to `docs/migrate-to-v2-api.md` for details.
+- This release marks deprecation of some plugins that either became replaced by a new solution or transformed into a community plugin. Refer to `docs/deprecated-plugins.md` for details.
+
+### Added
+
+- Print/Anchor: It's now possible to generate qr codes in Share and Print [#1482](https://github.com/hajkmap/Hajk/issues/1482)
+- Sketch: It's now possible to disable stroke for polygons and circles [#1177](https://github.com/hajkmap/Hajk/issues/1177)
+- Backend: The new .NET 6 backend. Issue: [#1210](https://github.com/hajkmap/Hajk/issues/1210). PR: [#1395](https://github.com/hajkmap/Hajk/pull/1395)
+- Core: Allow to specify map config by using `m` query parameter, even when no backend is active. [commit](https://github.com/hajkmap/Hajk/commit/eb5be276437994c86c2edd5abef3ea21cd6071b4)
+- Deployment: Added Dockerfile making it possible to deploy "Hajk-simple" on OpenShift using S2I. PR: [#1487](https://github.com/hajkmap/Hajk/pull/1487)
+- TimeSlider: It's now possible to print images of the content generated in the TimeSlider plugin. PR: [#1492](https://github.com/hajkmap/Hajk/pull/1492)
+
+### Fixed
+
+- Add conditional rendering for Control button [commit](https://github.com/hajkmap/Hajk/commit/b34def3249b368de336a5c4eadd86318103e78fb)
+- Restore cross-platform build for NodeJS backend [#1484](https://github.com/hajkmap/Hajk/pull/1484)
+- Bug fix associated to #1468 [#1485](https://github.com/hajkmap/Hajk/pull/1485)
+
+### Security
+
+- Bumped dependencies in Client.
+
+### Removed
+
+- The legacy .NET 4.5 backend. For reference, check out the https://github.com/hajkmap/Hajk/tree/legacy-dotnet-4.5-backend branch.
+- V1 API in NodeJS Backend.
 
 ## [3.13.25] - 2024-02-13
 

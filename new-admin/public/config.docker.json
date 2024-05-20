@@ -41,7 +41,7 @@
     "url_map_settings": "/api/v2/settings/mapsettings",
     "url_tool_settings": "/api/v2/settings/toolsettings",
     "url_document_list": "/api/v2/informative/list",
-    "authentication_active": false
+    "authentication_active": true
   },
   "informative": {
     "url_proxy": "",

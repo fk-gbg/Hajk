@@ -2,7 +2,7 @@ import React from "react";
 
 import { styled } from "@mui/material/styles";
 import MonitorIcon from "@mui/icons-material/Monitor";
-import { withSnackbar } from "notistack";
+import withSnackbar from "components/WithSnackbar";
 
 import MarkisConnectionModel from "./MarkisConnectionModel";
 import MarkisConnectionView from "./MarkisConnectionView";

@@ -652,10 +652,11 @@ class MarkisConnectionModel {
               createdFeatures.forEach((drawnArea) => {
                 if (drawnArea.getGeometry().getType() === "Polygon") {
                   try {
-                    let interSection = intersect(
-                      parser.writeFeatureObject(drawnArea),
-                      estate
-                    );
+                    const drawnAreaAndEstateCollection = {
+                      type: "FeatureCollection",
+                      features: [parser.writeFeatureObject(drawnArea), estate],
+                    };
+                    let interSection = intersect(drawnAreaAndEstateCollection);
                     if (interSection) {
                       let intersectionFeature =
                         parser.readFeature(interSection);

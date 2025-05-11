@@ -194,11 +194,7 @@ class AttributeEditor extends React.Component {
       if (model.editFeatureId) {
         var markup = model.editSource.editableFields.map((field, i) => {
           var valueMarkup = this.getValueMarkup(field);
-          return (
-            <div key={i} ref={field.name}>
-              {valueMarkup}
-            </div>
-          );
+          return <div key={i}>{valueMarkup}</div>;
         });
         return (
           <div>

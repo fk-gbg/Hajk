@@ -1,0 +1,12 @@
+{
+  "mapserviceBase": "/api/v2",
+  "proxy": "",
+  "searchProxy": "",
+  "defaultMap": "map_1",
+  "showExperimentalLanguageSwitcher": false,
+  "lang": "en",
+  "noLayerSwitcherMessage": "This map has no layer switcher, which indicates that you are not allowed to use this map!",
+  "networkErrorMessage": "Nätverksfel. Försök att ladda om sidan genom att trycka på F5.",
+  "parseErrorMessage": "Konfigurationsfel. Försök att ladda om sidan genom att trycka på F5.",
+  "announcements": []
+}

@@ -1,0 +1,58 @@
+# Stage 1 - Build the backend
+FROM registry.access.redhat.com/ubi9/nodejs-24 AS backendBuilder
+
+WORKDIR /opt/app-root/src
+COPY /apps/backend/package*.json ./
+USER root
+RUN npm ci
+COPY ./apps/backend ./
+RUN npm run compile
+
+# Stage 2 - Build the client
+FROM registry.access.redhat.com/ubi9/nodejs-24 AS clientBuilder
+
+WORKDIR /opt/app-root/src
+USER root
+RUN dnf install -y git && dnf clean all
+COPY ./.git ./.git
+RUN git config --global --add safe.directory /opt/app-root/src
+COPY /apps/client/package*.json ./
+RUN npm ci
+COPY ./apps/client ./
+RUN rm ./public/appConfig.json
+RUN mv ./public/appConfig.docker.json ./public/appConfig.json
+RUN npm run build
+
+# Stage 3 - Build the admin
+FROM registry.access.redhat.com/ubi9/nodejs-24 AS adminBuilder
+
+WORKDIR /opt/app-root/src
+COPY /apps/admin/package*.json ./
+USER root
+RUN npm ci
+COPY ./apps/admin ./
+RUN rm ./public/config.json
+RUN mv ./public/config.docker.json ./public/config.json
+RUN npm run build
+
+# Stage 4 - Combine everything and run it
+FROM registry.access.redhat.com/ubi9/nodejs-24-minimal
+
+WORKDIR /opt/app-root/src
+COPY /apps/backend/package*.json ./
+USER root
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=backendBuilder /opt/app-root/src/dist ./
+COPY /apps/backend/.env.example ./.env
+COPY /apps/backend/App_Data ./App_Data
+COPY /apps/backend/static ./static
+
+COPY --from=clientBuilder /opt/app-root/src/build ./static/client
+COPY --from=adminBuilder /opt/app-root/src/build ./static/admin
+
+RUN chown -R 1001:0 /opt/app-root/src && chmod -R g=u /opt/app-root/src
+
+EXPOSE 3002
+USER 1001
+CMD ["node", "index.js"]

@@ -196,9 +196,9 @@ built-it compression by setting the ENABLE_GZIP_COMPRESSION option to "true" in 
       );
     }
 
-    // We have to make sure to add the json-parsers etc. after the proxies has been initiated.
-    // If they are added before, eventual payload trough the proxies will not be handled correctly.
-    this.setupProxies().then(() => {
+    // We have to make sure to add the json-parsers etc. after the proxies have been initiated.
+    // If they are added before, eventual payload through the proxies will not be handled correctly.
+    this.requestParsingReady = this.setupProxies().then(() => {
       app.use(Express.json({ limit: process.env.REQUEST_LIMIT || "100kb" }));
       app.use(
         Express.urlencoded({
@@ -551,8 +551,11 @@ built-it compression by setting the ENABLE_GZIP_COMPRESSION option to "true" in 
   }
 
   router(routes) {
-    routes(app);
-    app.use(errorHandler);
+    this.routesReady = this.requestParsingReady
+      .then(() => routes(app))
+      .then(() => {
+        app.use(errorHandler);
+      });
     return this;
   }
 
@@ -564,8 +567,15 @@ built-it compression by setting the ENABLE_GZIP_COMPRESSION option to "true" in 
       );
 
     // Shutdown handler
+    let server;
+
     const shutdown = (signal, value) => {
       logger.info("Shutdown requested…");
+      if (server === undefined) {
+        logger.info("Server was not started yet.");
+        process.exitCode = 128 + value;
+        throw new Error(`Server was not started before ${signal}.`);
+      }
       server.close(() => {
         logger.info(`Server stopped by ${signal} with value ${value}.`);
       });
@@ -584,8 +594,16 @@ built-it compression by setting the ENABLE_GZIP_COMPRESSION option to "true" in 
       process.on(signal, () => shutdown(signal, signals[signal]));
     });
 
-    // Let's setup the server and start listening.
-    const server = http.createServer(app).listen(port, welcome(port));
+    // Let's setup the server and start listening after async middleware and routes are ready.
+    (this.routesReady || Promise.resolve())
+      .then(() => {
+        server = http.createServer(app).listen(port, welcome(port));
+      })
+      .catch((error) => {
+        logger.error("Server startup failed.", error);
+        process.exitCode = 1;
+        throw error;
+      });
 
     return app;
   }

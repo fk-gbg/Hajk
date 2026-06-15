@@ -1,0 +1,61 @@
+import { Grid, Typography } from "@mui/material";
+
+import DrawTypeSelector from "../components/DrawTypeSelector";
+import Information from "../components/Information";
+import FeatureStyleSelector from "../components/featureStyle/FeatureStyleSelector";
+import FeatureTextSetter from "../components/FeatureTextSetter";
+import SelectFeaturesDialog from "utils/SelectFeaturesDialog";
+
+const AddView = (props) => {
+  // Let's destruct some properties from the props
+  const { model, activeDrawType, setActiveDrawType, localObserver, drawModel } =
+    props;
+  // We have to get some information about the current activity (view)
+  const activity = model.getActivityFromId(props.id);
+  return (
+    <Grid container>
+      <Grid size={12}>
+        <Information text={activity.information} />
+      </Grid>
+      <Grid style={{ marginTop: 16 }} size={12}>
+        <Grid style={{ marginBottom: 4 }} size={12}>
+          <Typography align="center">Typ</Typography>
+        </Grid>
+        <Grid size={12}>
+          <DrawTypeSelector
+            activeDrawType={activeDrawType}
+            setActiveDrawType={setActiveDrawType}
+          />
+        </Grid>
+      </Grid>
+      <FeatureStyleSelector
+        activityId={props.id}
+        activeDrawType={activeDrawType}
+        drawStyle={props.drawStyle}
+        drawModel={props.drawModel}
+        setDrawStyle={props.setDrawStyle}
+        textStyle={props.textStyle}
+        setTextStyle={props.setTextStyle}
+        localObserver={props.localObserver}
+        globalObserver={props.globalObserver}
+        pluginShown={props.pluginShown}
+        bufferState={props.bufferState}
+        setBufferState={props.setBufferState}
+        highlightLayer={props.highlightLayer}
+        toggleBufferBtn={props.toggleBufferBtn}
+        setToggleBufferBtn={props.setToggleBufferBtn}
+      />
+      <FeatureTextSetter
+        localObserver={props.localObserver}
+        drawModel={props.drawModel}
+      />
+      <SelectFeaturesDialog
+        localObserver={localObserver}
+        drawModel={drawModel}
+        dialogTitle="Välj de objekt du vill kopiera"
+      />
+    </Grid>
+  );
+};
+
+export default AddView;

@@ -42,7 +42,13 @@ class MarkisConnectionModel {
     this.geometryName = "geom";
     this.wfsParser = new WFS();
     this.controllers = [];
+    this.affectedEstateInfo = null;
     this.userSelectedStyle = null;
+    this.userSelectedStyleValues = {
+      strokeColor: "rgba(255, 0, 0, 1)",
+      fillColor: "rgba(200, 0, 0, 0.1)",
+      strokeWidth: 2,
+    };
     this.vectorSource = new VectorSource({});
     this.searchResultLayer = new VectorLayer({
       source: new VectorSource({}),
@@ -239,6 +245,7 @@ class MarkisConnectionModel {
 
   updateFeatureStyle = (strokeColor, fillColor, strokeWidth) => {
     const style = getStyleFromValues(strokeColor, fillColor, strokeWidth);
+    this.userSelectedStyleValues = { strokeColor, fillColor, strokeWidth };
     this.userSelectedStyle = style;
     if (this.markisParameters.userMode === "Show") {
       this.searchResultLayer
@@ -285,7 +292,7 @@ class MarkisConnectionModel {
     this.map.addInteraction(this.edit);
     this.map.snapHelper.add("markisconnection");
 
-    this.edit.on("modifyend", (event) => {
+    this.edit.on("modifyend", () => {
       this.featureModified = true;
       this.localObserver.publish("feature-modified");
     });
@@ -465,10 +472,12 @@ class MarkisConnectionModel {
       regDate: undefined,
     });
     this.sourceName = undefined;
+    this.createMethod = "abort";
     this.editingExisting = false;
     this.featureModified = false;
     this.editFeatureId = undefined;
     this.geometriesExist = false;
+    this.affectedEstateInfo = null;
   }
 
   validateTradeGeometries() {
@@ -565,7 +574,7 @@ class MarkisConnectionModel {
     return true;
   }
 
-  lookupEstate(source, feature, callback) {
+  lookupEstate(source, feature) {
     const projCode = this.map.getView().getProjection().getCode();
 
     const geometry = feature.getGeometry();
@@ -1003,7 +1012,7 @@ class MarkisConnectionModel {
           } else {
             feature.modification = "updated";
           }
-          feature.on("propertychange", (e) => {
+          feature.on("propertychange", () => {
             if (feature.modification === "removed") {
               return;
             }
@@ -1014,7 +1023,7 @@ class MarkisConnectionModel {
               feature.modification = "updated";
             }
           });
-          feature.on("change", (e) => {
+          feature.on("change", () => {
             if (feature.modification === "removed") {
               return;
             }
@@ -1146,9 +1155,9 @@ class MarkisConnectionModel {
               }, 500);
               if (callback) callback(jsonResults);
             })
-            .catch((parseErrors) => {});
+            .catch(() => {});
         })
-        .catch((responseErrors) => {});
+        .catch(() => {});
     }, 200);
   }
 

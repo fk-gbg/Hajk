@@ -1,0 +1,507 @@
+import { useEffect, useState, memo, useCallback } from "react";
+
+// Material UI components
+import {
+  Box,
+  ListItemButton,
+  ListItemSecondaryAction,
+  ListItemText,
+  useTheme,
+} from "@mui/material";
+import HajkToolTip from "components/HajkToolTip";
+
+import DragIndicatorOutlinedIcon from "@mui/icons-material/DragIndicatorOutlined";
+import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+
+// Custom components
+import LegendIcon from "./LegendIcon";
+import LegendImage from "./LegendImage";
+import LsIconButton from "./LsIconButton";
+import BtnShowDetails from "./BtnShowDetails";
+import BtnLayerWarning from "./BtnLayerWarning";
+import BtnShowLegend from "./BtnShowLegend";
+import BtnToggleLayerLabel from "./BtnToggleLayerLabel";
+import LsCheckBox from "./LsCheckBox";
+import LsRadioButton from "./LsRadioButton";
+
+import { useMapZoom } from "../LayerSwitcherProvider";
+import { useLayerSwitcherDispatch } from "../LayerSwitcherProvider";
+import { getIsMobile } from "../LayerSwitcherUtils";
+
+const getLayerToggleState = (isToggled, isSemiToggled, isVisibleAtZoom) => {
+  if (!isToggled) {
+    return "unchecked";
+  }
+  if (!isVisibleAtZoom) {
+    return "checkedWithWarning";
+  }
+  if (isSemiToggled) {
+    return "semichecked";
+  }
+  if (isToggled) {
+    return "checked";
+  }
+  return "unchecked";
+};
+
+const layerShouldShowLegendIcon = (layerType, isFakeMapLayer) =>
+  layerType === "group" ||
+  layerType === "base" ||
+  isFakeMapLayer ||
+  layerType === "system";
+
+const LayerLegendIcon = ({
+  legendIcon,
+  layerType,
+  isFakeMapLayer,
+  legendIsActive,
+  toggleLegend,
+}) => {
+  const layerLegendIcon = legendIcon;
+  if (layerLegendIcon !== undefined) {
+    return <LegendIcon url={layerLegendIcon} />;
+  } else if (layerType === "system") {
+    return (
+      <BuildOutlinedIcon
+        sx={{
+          display: "block",
+          mr: "5px",
+          mt: "6px",
+          width: "18px",
+          height: "18px",
+        }}
+      />
+    );
+  }
+
+  if (layerShouldShowLegendIcon(layerType, isFakeMapLayer)) {
+    return null;
+  }
+
+  return (
+    <BtnShowLegend
+      legendIsActive={legendIsActive}
+      onClick={() => toggleLegend()}
+    />
+  );
+};
+
+function LayerItem({
+  layerState,
+  layerConfig,
+  clickCallback,
+  draggable,
+  toggleable,
+  globalObserver,
+  display,
+  visibleSubLayers,
+  expandableSection,
+  showSublayers,
+  subLayersSection,
+  isGroupLayerQuickAccess,
+  isLayerQuickAccess,
+  isExclusive,
+}) {
+  // WmsLayer load status, shows warning icon if !ok
+  const [wmsLayerLoadStatus, setWmsLayerLoadStatus] = useState("ok");
+  // State that toggles legend collapse
+  const [legendIsActive, setLegendIsActive] = useState(false);
+  // Track if the label layer is active
+  const [showingLabelLayer, setShowingLabelLayer] = useState(false);
+  const theme = useTheme();
+
+  const mapZoom = useMapZoom();
+
+  const { layerIsToggled } = layerState ?? {};
+
+  const {
+    layerId,
+    layerCaption,
+    layerType,
+    layerIsFakeMapLayer,
+    layerMinZoom,
+    layerMaxZoom,
+    allSubLayers,
+    layerInfo,
+    layerLegendIcon,
+    olLayer,
+  } = layerConfig ?? {};
+
+  const legendIcon = layerInfo?.legendIcon || layerLegendIcon;
+
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const applyLabelStyle = useCallback(() => {
+    if (!olLayer) return;
+    if (olLayer.get("allSubLayers")?.length > 1) return; // Multi-sublayer group layers handle labels per-sublayer
+
+    const source = olLayer.getSource?.();
+    if (!source || typeof source.updateParams !== "function") return;
+
+    const currentParams = source.getParams?.() || {};
+
+    // Get stored layer name
+    const layerName = olLayer.get("wmsLayerName") || currentParams.LAYERS;
+
+    if (!layerName) return;
+
+    const isActive = !!olLayer.get("useLabelStyle");
+    const baseStyle = olLayer.get("initialStyles") || "";
+
+    source.updateParams({
+      ...currentParams,
+      LAYERS: layerName,
+      STYLES: isActive ? `${layerName}_labels` : baseStyle,
+    });
+  }, [olLayer]);
+
+  const toggleLabelLayer = (e) => {
+    e.stopPropagation();
+    if (!olLayer) return;
+
+    const newValue = !olLayer.get("useLabelStyle");
+    olLayer.set("useLabelStyle", newValue);
+  };
+
+  // Save the initial styles in "initialStyles" once when olLayer is ready
+  useEffect(() => {
+    if (!olLayer) return;
+
+    const source = olLayer.getSource?.();
+    if (!source) return;
+
+    const params = source.getParams?.() || {};
+
+    // Store original style once
+    if (olLayer.get("initialStyles") == null) {
+      olLayer.set("initialStyles", params.STYLES || "");
+    }
+  }, [olLayer]);
+
+  // Sync showingLabelLayer state with olLayer property and apply styles
+  useEffect(() => {
+    if (!olLayer) return;
+
+    const update = () => {
+      const active = !!olLayer.get("useLabelStyle");
+      setShowingLabelLayer(active);
+      applyLabelStyle();
+    };
+
+    // Initial sync on mount or layer change
+    update();
+
+    // Listen for changes on label change
+    olLayer.on("change:useLabelStyle", update);
+
+    return () => {
+      olLayer.un("change:useLabelStyle", update);
+    };
+  }, [olLayer, layerId, applyLabelStyle]);
+
+  // Apply label style when layer becomes visible (in case it was set while hidden)
+  useEffect(() => {
+    if (!olLayer) return;
+    if (!layerIsToggled) return;
+
+    // Wait for OL state to be ready
+    requestAnimationFrame(() => {
+      applyLabelStyle();
+    });
+  }, [layerIsToggled, olLayer]);
+
+  useEffect(() => {
+    const handleLoadStatusChange = (d) => {
+      if (wmsLayerLoadStatus !== "loaderror" && layerId === d.id) {
+        setWmsLayerLoadStatus(d.status);
+      }
+    };
+
+    // Subscribe to layer load status.
+    const loadStatusSubscription = globalObserver.subscribe(
+      "layerswitcher.wmsLayerLoadStatus",
+      handleLoadStatusChange
+    );
+
+    // Cleanup function to unsubscribe when the component unmounts or if the relevant dependencies change.
+    return () =>
+      globalObserver.unsubscribe(
+        "layerswitcher.wmsLayerLoadStatus",
+        loadStatusSubscription
+      );
+  }, [globalObserver, layerId, wmsLayerLoadStatus]);
+
+  const layerSwitcherDispatch = useLayerSwitcherDispatch();
+
+  // Handles list item click
+  const handleLayerItemClick = (e) => {
+    // If a clickCallback is defined, call it.
+    if (clickCallback) {
+      clickCallback();
+      return;
+    }
+
+    // Handle system layers by showing layer details directly
+    if (layerType === "system") {
+      showLayerDetails(e);
+      return;
+    }
+
+    // Toggle visibility for non-system layers
+    // This check is technically redundant now but left for clarity
+    if (layerType !== "system") {
+      layerSwitcherDispatch.setLayerVisibility(layerId, !layerIsToggled);
+    }
+  };
+
+  const layerIsSemiToggled =
+    layerType === "groupLayer" &&
+    visibleSubLayers.length !== allSubLayers.length;
+
+  const layerIsVisibleAtZoom =
+    mapZoom >= layerMinZoom && mapZoom <= layerMaxZoom;
+
+  const toggleState = getLayerToggleState(
+    layerIsToggled,
+    layerIsSemiToggled,
+    layerIsVisibleAtZoom
+  );
+
+  /**
+   * Render the load information component.
+   * @instance
+   * @return {external:ReactElement}
+   */
+  const renderStatusIcon = () => {
+    return wmsLayerLoadStatus === "loaderror" && <BtnLayerWarning />;
+  };
+
+  // Show layer details action
+  const showLayerDetails = (e) => {
+    e.stopPropagation();
+    globalObserver.publish("setLayerDetails", { layerId });
+  };
+
+  const drawOrderItem = () => {
+    if (draggable) {
+      return true;
+    }
+    return false;
+  };
+
+  const renderBorder = (theme) => {
+    if (drawOrderItem()) {
+      return "none";
+    }
+    if (legendIsActive) {
+      return `${theme.spacing(0.2)} solid transparent`;
+    }
+    return `${theme.spacing(0.2)} solid ${theme.palette.divider}`;
+  };
+
+  // Prepare legend urls from all sublayers, but keep only unique urls.
+  // This way we avoid duplicate legend images (which otherwise would happen
+  // when Admin sets a value to `legend` for a layer group: all sublayers would
+  // have the same legend image and we'd end up with multiple legend images).
+  // This does not affect layers with multiple styles, since each style has its own legend image,
+  // so a group layer that grabs a unique legend for each sublayer will end up with multiple legend images.
+  // See https://github.com/hajkmap/Hajk/issues/1644 for more details.
+  const legendUrls =
+    Array.isArray(layerInfo?.legend) &&
+    layerInfo?.legend
+      .map((l) => l?.url)
+      .filter((url, index, self) => self.indexOf(url) === index);
+
+  return (
+    <div
+      className="layer-item"
+      style={{
+        display: display,
+        marginLeft: expandableSection || draggable ? 0 : "31px",
+        borderBottom:
+          legendIsActive || (drawOrderItem() && showSublayers)
+            ? `${theme.spacing(0.2)} solid ${theme.palette.divider}`
+            : "none",
+      }}
+    >
+      <Box
+        sx={[
+          {
+            position: "relative",
+            alignItems: "flex-start",
+            borderBottom: (theme) =>
+              drawOrderItem() && showSublayers
+                ? "none"
+                : drawOrderItem() && !legendIsActive
+                  ? `${theme.spacing(0.2)} solid ${theme.palette.divider}`
+                  : "none",
+            display: "flex",
+          },
+          draggable
+            ? {
+                "&:hover .dragInidcatorIcon": {
+                  opacity: 1,
+                },
+              }
+            : {
+                "&:hover .dragInidcatorIcon": {
+                  opacity: 0,
+                },
+              },
+        ]}
+      >
+        {draggable && (
+          <LsIconButton
+            disableRipple
+            sx={{
+              px: 0,
+              pt: "7px",
+              opacity: 0,
+              transition: "opacity 200ms",
+            }}
+            className="dragInidcatorIcon"
+          >
+            <HajkToolTip placement="left" title="Dra för att ändra ritordning">
+              <DragIndicatorOutlinedIcon
+                sx={{ pt: "1px" }}
+                fontSize={"small"}
+              />
+            </HajkToolTip>
+          </LsIconButton>
+        )}
+        {expandableSection && expandableSection}
+        <ListItemButton
+          disableTouchRipple
+          onClick={toggleable ? handleLayerItemClick : null}
+          sx={{
+            p: 0,
+            ml: 0,
+          }}
+          dense
+        >
+          <Box
+            sx={{
+              display: "flex",
+              position: "relative",
+              width: "100%",
+              alignItems: "flex-start",
+              py: getIsMobile() ? 0.5 : 0.25, // jesade-vbg compact mode, changed from py: 0.5
+              pr: 1,
+              pl: "2px",
+              borderBottom: (theme) => renderBorder(theme),
+            }}
+          >
+            {toggleable &&
+              (isExclusive ? (
+                <LsRadioButton
+                  id={
+                    !isLayerQuickAccess && !isGroupLayerQuickAccess
+                      ? "toggle-layer-item"
+                      : undefined
+                  }
+                  toggleState={toggleState}
+                />
+              ) : (
+                <LsCheckBox
+                  id={
+                    !isLayerQuickAccess && !isGroupLayerQuickAccess
+                      ? "toggle-layer-item"
+                      : undefined
+                  }
+                  toggleState={toggleState}
+                />
+              ))}
+            <LayerLegendIcon
+              legendIcon={legendIcon}
+              layerType={layerType}
+              isFakeMapLayer={layerIsFakeMapLayer}
+              legendIsActive={legendIsActive}
+              toggleLegend={() => setLegendIsActive(!legendIsActive)}
+            />
+            <ListItemText
+              primary={layerCaption}
+              sx={{ alignSelf: "center" }}
+              slotProps={{
+                primary: {
+                  variant: "body1",
+                  sx: {
+                    pr: 5,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontWeight:
+                      layerIsToggled && !draggable ? "bold" : "inherit",
+                  },
+                },
+              }}
+            />
+            <ListItemSecondaryAction
+              sx={{
+                position: "absolute",
+                right: "4px",
+                top: "1px",
+                transform: "none",
+              }}
+            >
+              {renderStatusIcon()}
+              {!(allSubLayers?.length > 1) &&
+                (layerInfo?.hasLabelStyle ||
+                  layerInfo?.layersInfo?.[allSubLayers?.[0]]
+                    ?.hasLabelStyle) && (
+                  <BtnToggleLayerLabel
+                    active={showingLabelLayer}
+                    onClick={toggleLabelLayer}
+                  />
+                )}
+              {!toggleable && !draggable ? (
+                <LsIconButton size="small">
+                  <HajkToolTip title="Bakgrundskartan ligger låst längst ner i ritordningen">
+                    <LockOutlinedIcon />
+                  </HajkToolTip>
+                </LsIconButton>
+              ) : null}
+              {layerIsFakeMapLayer !== true && layerType !== "system" && (
+                <BtnShowDetails
+                  id={
+                    !isLayerQuickAccess && !isGroupLayerQuickAccess
+                      ? "show-layer-details"
+                      : undefined
+                  }
+                  onClick={(e) => showLayerDetails(e)}
+                />
+              )}
+            </ListItemSecondaryAction>
+          </Box>
+        </ListItemButton>
+      </Box>
+      <Box
+        sx={[
+          expandableSection
+            ? {
+                paddingLeft: "30px",
+              }
+            : {
+                paddingLeft: 0,
+              },
+          expandableSection
+            ? {
+                ".ls-draworder-tab-view &": {
+                  paddingLeft: "30px",
+                },
+              }
+            : {
+                ".ls-draworder-tab-view &": {
+                  paddingLeft: "20px",
+                },
+              },
+        ]}
+      >
+        {layerShouldShowLegendIcon(layerType, layerIsFakeMapLayer) ? null : (
+          <LegendImage src={legendUrls} open={legendIsActive}></LegendImage>
+        )}
+      </Box>
+      {subLayersSection && subLayersSection}
+    </div>
+  );
+}
+
+export default memo(LayerItem);

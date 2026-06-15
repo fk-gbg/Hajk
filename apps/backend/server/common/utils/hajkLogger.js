@@ -1,4 +1,8 @@
 import log4js from "log4js";
+import { requestContext } from "./requestContext.js";
+
+// Let's grab user object from the request context. If it's not available, we'll use a dash.
+const userToken = () => requestContext.getStore()?.user ?? "-";
 
 // Setup our logger.
 // First, see if Hajk is running in a clustered environment, if so, we want unique log file
@@ -22,22 +26,36 @@ log4js.configure({
   // Appenders are output methods, e.g. if log should be written to file or console (or both)
   appenders: {
     // Console appender will print to stdout
-    console: { type: "stdout" },
+    console: {
+      type: "stdout",
+      layout: {
+        type: "pattern",
+        // This pattern mimics the default layout, but adds the user token to the output.
+        // The %x{user} is replaced with the userToken value…
+        pattern: "%[[%d] [%p] %c -%] [%x{user}] %m",
+        // …which we pass to logger from request context store here:
+        tokens: { user: userToken },
+      },
+    },
     // File appender will print to a log file, rotating it each day.
     file: {
       type: "dateFile",
       filename: `logs/output${uniqueInstance}.log`,
+      layout: {
+        type: "pattern",
+        pattern: "[%d] [%p] %c - [%x{user}] %m",
+        tokens: { user: userToken },
+      },
       ...commonDateFileOptions,
     },
     // Another file appender, specifically to log events that modify Hajk's layers/maps
     adminEventLog: {
       type: "dateFile",
       filename: `logs/admin_events${uniqueInstance}.log`,
-      // Custom layout as we only care about the timestamp, the message and new line,
-      // log level and log context are not of interest to this specific appender.
       layout: {
         type: "pattern",
-        pattern: "[%d] %m",
+        pattern: "[%d] [%x{user}] %m",
+        tokens: { user: userToken },
       },
       ...commonDateFileOptions,
     },
@@ -46,6 +64,16 @@ log4js.configure({
       type: "dateFile",
       filename: `logs/access${uniqueInstance}.log`,
       layout: { type: "messagePassThrough" },
+      ...commonDateFileOptions,
+    },
+    // Appender for the detailed request logger middleware.
+    detailedRequestLog: {
+      type: "dateFile",
+      filename: `logs/detailed-requests${uniqueInstance}.log`,
+      layout: {
+        type: "pattern",
+        pattern: "[%d]%m",
+      },
       ...commonDateFileOptions,
     },
   },
@@ -71,6 +99,13 @@ log4js.configure({
     ...(process.env.LOG_ACCESS_LOG_TO.trim().length !== 0 && {
       http: {
         appenders: process.env.LOG_ACCESS_LOG_TO.split(","),
+        level: "all",
+      },
+    }),
+    // If activated in .env, write detailed request log to its own file, independent of LOG_LEVEL
+    ...(process.env.LOG_DETAILED_REQUEST_LOGGER === "true" && {
+      "detailed.request.logger": {
+        appenders: ["detailedRequestLog"],
         level: "all",
       },
     }),

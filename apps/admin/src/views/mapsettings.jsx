@@ -93,6 +93,7 @@ $.fn.editable = function (component) {
       remove.remove();
       toggled.remove();
       expanded.remove();
+      exclusive.remove();
       infogroupcontainer.remove();
       infogroupvisible.remove();
       infogrouptitle.remove();
@@ -111,6 +112,7 @@ $.fn.editable = function (component) {
       let name = input.val();
       let toggled = checkbox2.is(":checked");
       let expanded = checkbox.is(":checked");
+      let exclusive = checkbox6.is(":checked");
       let infogroupvisible = checkbox5.is(":checked");
       let infogrouptitle = infogroupvisible ? input5.val() : "";
       let infogrouptext = infogroupvisible ? input6.val() : "";
@@ -123,6 +125,7 @@ $.fn.editable = function (component) {
       node.parent().attr("data-name", name);
       node.parent().attr("data-toggled", toggled);
       node.parent().attr("data-expanded", expanded);
+      node.parent().attr("data-exclusive", exclusive);
       node.parent().attr("data-infogroupvisible", infogroupvisible);
       node.parent().attr("data-infogrouptitle", infogrouptitle);
       node.parent().attr("data-infogrouptext", infogrouptext);
@@ -170,6 +173,7 @@ $.fn.editable = function (component) {
       id12 = Math.floor(Math.random() * 1e5),
       id13 = Math.floor(Math.random() * 1e5),
       id14 = Math.floor(Math.random() * 1e5),
+      id15 = Math.floor(Math.random() * 1e5),
       ok = $('<span class="btn btn-success">OK</span>'),
       layerOk = $('<span class="btn btn-success">OK</span>'),
       layerOk2 = $('<span class="btn btn-success">OK</span>'),
@@ -189,6 +193,9 @@ $.fn.editable = function (component) {
       label5 = $(`<br /><label for="${id6}">Tillträde</label><br />`),
       label6 = $(`<label for="${id7}">Infobox</label><br />`),
       label7 = $(`<label for="${id8}">Infodokument&nbsp;</label>`).css(
+        groupCheckboxLabelStyle
+      ),
+      label14 = $(`<label for="${id15}">Exklusiv grupp&nbsp;</label>`).css(
         groupCheckboxLabelStyle
       ),
       label8 = $(`<label for="${id9}">Rubrik&nbsp;</label>`).css(
@@ -214,6 +221,7 @@ $.fn.editable = function (component) {
       checkbox3 = $(`<input id="${id3}" type="checkbox"/>`),
       checkbox4 = $(`<input id="${id4}" type="text" value="Nytt namn"/><br />`),
       checkbox5 = $(`<input id="${id8}" type="checkbox"/>`),
+      checkbox6 = $(`<input id="${id15}" type="checkbox"/>`),
       remove = $('<span class="fa fa-minus-circle"></span>'),
       input = $("<input />"),
       input2 = $(`<input id="${id5}" type="text" placeholder="Ny länk"/>`),
@@ -229,6 +237,7 @@ $.fn.editable = function (component) {
       input10 = $(`<input id="${id14}" type="text"/>`).css(infoGroupInputStyle),
       expanded = $('<div class="expanded-at-start"></div>'),
       toggled = $('<div class="expanded-at-start"></div>'),
+      exclusive = $('<div class="expanded-at-start"></div>'),
       infogroupvisible = $('<div class="expanded-at-start"></div>'),
       infogroupcontainer = $('<div class="info-groupContainer"></div>'),
       infogrouptitle = $("<div></div>").css(infoGroupStyle),
@@ -264,6 +273,9 @@ $.fn.editable = function (component) {
     }
     if (node.parent().attr("data-toggled")) {
       checkbox2.attr("checked", JSON.parse(node.parent().attr("data-toggled")));
+    }
+    if (node.parent().attr("data-exclusive")) {
+      checkbox6.attr("checked", JSON.parse(node.parent().attr("data-exclusive")));
     }
 
     if (node.parent().attr("data-infogroupvisible")) {
@@ -316,6 +328,7 @@ $.fn.editable = function (component) {
     ) {
       expanded.append(checkbox, label);
       toggled.append(checkbox2, label2);
+      exclusive.append(checkbox6, label14);
       infogroupvisible.append(checkbox5, label7);
       infogrouptitle.append(label8, input5);
       infogrouptext.append(label9, input6);
@@ -398,7 +411,7 @@ $.fn.editable = function (component) {
       marginTop: "7px",
     });
 
-    tools.append(ok, abort, toggled, expanded, infogroupvisible);
+    tools.append(ok, abort, toggled, expanded, exclusive, infogroupvisible);
 
     infogroupcontainer.append(
       infogrouptitle,
@@ -472,10 +485,13 @@ class Menu extends Component {
       backgroundSwitcherBlack: true,
       backgroundSwitcherWhite: true,
       enableOSM: false,
+      OSMVisibleAtStart: false,
       showBreadcrumbs: false,
       showDrawOrderView: false,
       showFilter: false,
       showQuickAccess: false,
+      legendForceTransparency: false,
+      legendTryHiDPI: false,
       enableSystemLayersSwitch: false,
       lockDrawOrderBaselayer: false,
       drawOrderViewInfoText:
@@ -505,6 +521,8 @@ class Menu extends Component {
       keywords: [],
       keywordInput: "",
       cqlFilterVisible: false,
+      showLegendByDefault: false,
+      renderSpecialBackgroundsAtBottom: false,
     };
     this.titleRef = React.createRef();
     this.authorRef = React.createRef();
@@ -543,6 +561,8 @@ class Menu extends Component {
             existingConfig.backgroundSwitcherWhite ??
             this.state.backgroundSwitcherWhite,
           enableOSM: existingConfig.enableOSM ?? this.state.enableOSM,
+          OSMVisibleAtStart:
+            existingConfig.OSMVisibleAtStart ?? this.state.OSMVisibleAtStart,
           showBreadcrumbs:
             existingConfig.showBreadcrumbs ?? this.state.showBreadcrumbs,
           showDrawOrderView:
@@ -550,6 +570,11 @@ class Menu extends Component {
           showFilter: existingConfig.showFilter ?? this.state.showFilter,
           showQuickAccess:
             existingConfig.showQuickAccess ?? this.state.showQuickAccess,
+          legendForceTransparency:
+            existingConfig.legendForceTransparency ??
+            this.state.legendForceTransparency,
+          legendTryHiDPI:
+            existingConfig.legendTryHiDPI ?? this.state.legendTryHiDPI,
           enableSystemLayersSwitch:
             existingConfig.enableSystemLayersSwitch ??
             this.state.enableSystemLayersSwitch,
@@ -593,6 +618,11 @@ class Menu extends Component {
             this.state.minMaxZoomAlertOnToggleOnly,
           cqlFilterVisible:
             existingConfig.cqlFilterVisible ?? this.state.cqlFilterVisible,
+          showLegendByDefault:
+            existingConfig.showLegendByDefault ?? this.state.showLegendByDefault,
+          renderSpecialBackgroundsAtBottom:
+            existingConfig.renderSpecialBackgroundsAtBottom ??
+            this.state.renderSpecialBackgroundsAtBottom,
         });
         $(".tree-view li").editable(this);
         $(".tree-view > ul").sortable();
@@ -800,10 +830,13 @@ class Menu extends Component {
       backgroundSwitcherBlack: this.state.backgroundSwitcherBlack,
       backgroundSwitcherWhite: this.state.backgroundSwitcherWhite,
       enableOSM: this.state.enableOSM,
+      OSMVisibleAtStart: this.state.OSMVisibleAtStart,
       showBreadcrumbs: this.state.showBreadcrumbs,
       showDrawOrderView: this.state.showDrawOrderView,
       showFilter: this.state.showFilter,
       showQuickAccess: this.state.showQuickAccess,
+      legendForceTransparency: this.state.legendForceTransparency,
+      legendTryHiDPI: this.state.legendTryHiDPI,
       enableSystemLayersSwitch: this.state.enableSystemLayersSwitch,
       lockDrawOrderBaselayer: this.state.lockDrawOrderBaselayer,
       drawOrderViewInfoText: this.state.drawOrderViewInfoText,
@@ -816,6 +849,9 @@ class Menu extends Component {
       instruction: this.state.instruction,
       minMaxZoomAlertOnToggleOnly: this.state.minMaxZoomAlertOnToggleOnly,
       cqlFilterVisible: this.state.cqlFilterVisible,
+      showLegendByDefault: this.state.showLegendByDefault,
+      renderSpecialBackgroundsAtBottom:
+        this.state.renderSpecialBackgroundsAtBottom,
       dropdownThemeMaps: this.state.dropdownThemeMaps,
       themeMapHeaderCaption: this.state.themeMapHeaderCaption,
       visibleForGroups: this.state.visibleForGroups.map(
@@ -901,6 +937,7 @@ class Menu extends Component {
         name: node.dataset.name,
         toggled: checkIfTrue(node.dataset.toggled),
         expanded: checkIfTrue(node.dataset.expanded),
+        exclusive: checkIfTrue(node.dataset.exclusive),
         infogroupvisible: checkIfTrue(node.dataset.infogroupvisible),
         infogrouptitle: node.dataset.infogrouptitle,
         infogrouptext: node.dataset.infogrouptext,
@@ -1132,6 +1169,7 @@ class Menu extends Component {
     name,
     expanded,
     toggled,
+    exclusive,
     infogroupvisible,
     infogrouptitle,
     infogrouptext,
@@ -1148,6 +1186,7 @@ class Menu extends Component {
         data-type="group"
         data-toggled="${toggled}"
         data-expanded="${expanded}"
+        data-exclusive="${exclusive}"
         data-infogroupvisible="${infogroupvisible}"
         data-infogrouptitle="${infogrouptitle}"
         data-infogrouptext="${infogrouptext}"
@@ -1359,6 +1398,7 @@ class Menu extends Component {
               data-type="group"
               data-expanded={group.expanded}
               data-toggled={group.toggled}
+              data-exclusive={group.exclusive}
               data-infogroupvisible={group.infogroupvisible}
               data-infogrouptitle={group.infogrouptitle}
               data-infogrouptext={group.infogrouptext}
@@ -2269,6 +2309,42 @@ class Menu extends Component {
               </div>
               <div>
                 <input
+                  id="legendForceTransparency"
+                  name="legendForceTransparency"
+                  type="checkbox"
+                  onChange={this.handleInputChange}
+                  checked={this.state.legendForceTransparency}
+                />
+                &nbsp;
+                <label className="long-label" htmlFor="legendForceTransparency">
+                  Försök att göra teckenförteckning transparent (Experimentell){" "}
+                  <i
+                    className="fa fa-question-circle"
+                    data-toggle="tooltip"
+                    title="Lagerhanteraren kommer försöka att göra GetLegendGraphics transparenta och lägga till en bakgrund för att fungera bättre visuellt i vissa lägen. I GeoServer kommer även texten bli vit istället i dark mode"
+                  />
+                </label>
+              </div>
+              <div>
+                <input
+                  id="legendTryHiDPI"
+                  name="legendTryHiDPI"
+                  type="checkbox"
+                  onChange={this.handleInputChange}
+                  checked={this.state.legendTryHiDPI}
+                />
+                &nbsp;
+                <label className="long-label" htmlFor="legendTryHiDPI">
+                  Försök att hämta teckenförklaring i 180dpi (Experimentell){" "}
+                  <i
+                    className="fa fa-question-circle"
+                    data-toggle="tooltip"
+                    title="Lagerhanteraren kommer försöka hämta GetLegendGraphics i högre upplösning. 180dpi."
+                  />
+                </label>
+              </div>
+              <div>
+                <input
                   id="enableTransparencySlider"
                   name="enableTransparencySlider"
                   type="checkbox"
@@ -2303,6 +2379,24 @@ class Menu extends Component {
                     className="fa fa-question-circle"
                     data-toggle="tooltip"
                     title="När rutan är ikryssad visas ett fält för CQL-filter. Inställningen är global och visas för alla lager när rutan är ikryssad."
+                  />
+                </label>
+              </div>
+              <div>
+                <input
+                  id="showLegendByDefault"
+                  name="showLegendByDefault"
+                  type="checkbox"
+                  onChange={this.handleInputChange}
+                  checked={this.state.showLegendByDefault}
+                />
+                &nbsp;
+                <label className="long-label" htmlFor="showLegendByDefault">
+                  Visa teckenförklaring direkt{" "}
+                  <i
+                    className="fa fa-question-circle"
+                    data-toggle="tooltip"
+                    title="När rutan är ikryssad visas teckenförklaringen direkt i lagerdetaljvyn utan att användaren behöver klicka på knappen."
                   />
                 </label>
               </div>
@@ -2521,6 +2615,32 @@ class Menu extends Component {
                 &nbsp;
                 <label htmlFor="enableOSM">OpenStreetMap</label>
               </div>
+              <div>
+                <input
+                  id="OSMVisibleAtStart"
+                  name="OSMVisibleAtStart"
+                  type="checkbox"
+                  onChange={this.handleInputChange}
+                  checked={this.state.OSMVisibleAtStart}
+                />
+                &nbsp;
+                <label htmlFor="OSMVisibleAtStart">
+                  Ladda kartan med OpenStreetMap synligt vid start
+                </label>
+              </div>
+              <div>
+                <input
+                  id="renderSpecialBackgroundsAtBottom"
+                  name="renderSpecialBackgroundsAtBottom"
+                  type="checkbox"
+                  onChange={this.handleInputChange}
+                  checked={this.state.renderSpecialBackgroundsAtBottom}
+                />
+                &nbsp;
+                <label htmlFor="renderSpecialBackgroundsAtBottom">
+                  Visa lagren "Vit", "Svart" och "OSM" längst ner i listan.
+                </label>
+              </div>
               <div className="separator">Justera lagerhanteraren</div>
               <div className="margined">
                 <ColorButtonBlue
@@ -2538,6 +2658,7 @@ class Menu extends Component {
                   onClick={(e) =>
                     this.createGroup(
                       "Ny grupp",
+                      false,
                       false,
                       false,
                       false,

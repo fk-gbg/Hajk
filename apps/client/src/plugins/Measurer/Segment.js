@@ -1,6 +1,7 @@
 import { Style, Text } from "ol/style";
 import { Feature } from "ol";
 import { LineString, Point, Polygon } from "ol/geom";
+import { getLength } from "ol/sphere";
 
 export default class Segment {
   #enabled;
@@ -60,7 +61,10 @@ export default class Segment {
   };
 
   #formatLength = (line) => {
-    const length = line.getLength();
+    const length = getLength(line, {
+      projection: this.#map.getView().getProjection(),
+    });
+
     let output;
     if (length > 1000) {
       // Convert and format the length to 1 decimal rounded up if longer than 1 km
@@ -144,7 +148,7 @@ export default class Segment {
     }
   };
 
-  #handleSingleClick = (e) => {
+  #handleSingleClick = (_e) => {
     // Dont place a point until we have more than 2 coordinates in the LineString measurement.
     // Or 3 coordinates if we measure a Polygon.
     if (

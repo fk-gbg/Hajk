@@ -2,9 +2,9 @@ import { Vector as VectorLayer } from "ol/layer";
 import { Vector as VectorSource } from "ol/source";
 import { IconMarker } from "../Fir/FirIcons";
 import { Fill, Stroke, Style, Circle, Icon } from "ol/style";
-import Feature from "ol/Feature.js";
+import Feature from "ol/Feature";
 import HajkTransformer from "../../utils/HajkTransformer";
-import { Point } from "ol/geom.js";
+import { Point } from "ol/geom";
 import FirStyles from "../Fir/FirStyles";
 
 class KirLayerController {
@@ -217,13 +217,13 @@ class KirLayerController {
     }
   };
 
-  handleClearSearch = (data) => {
+  handleClearSearch = (_data) => {
     this.clearBeforeSearch();
     this.model.layers.draw.getSource().clear();
     this.model.layers.buffer.getSource().clear();
   };
 
-  bufferFeatures = (options) => {
+  bufferFeatures = (_options) => {
     if (!this.bufferValue) {
       this.getLayer("buffer").getSource().clear();
       return;

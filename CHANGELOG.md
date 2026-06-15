@@ -7,11 +7,133 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- ## [Unreleased]
+## [unreleased]
+
+### Breaking
+
+- Client: PropertyChecker got a substantial overhaul, including changing the format requirements for the underlying WMS layer. See [#1761](https://github.com/hajkmap/Hajk/issues/1761) as well as the tool's updated [README.md](https://github.com/hajkmap/Hajk/blob/f1bdbb77aff736df0675dc1e65234ec8be9ed3aa/apps/client/src/plugins/PropertyChecker/readme.md).
+- Client: InfoDialog - because this plugin now internally uses the LocalStorageHelper, existing settings already stored in user's LocalStorage under the old key will not be respected. In practice this means user will (once again) see any dialog where `visibleAtStart` and `showOnlyOnce` are set to `true`. This will happen once only. After this render, the `alreadyShown` value is written using the LocalStorageHelper and is respected in future renders.
 
 ### Added
 
+- Client + Admin: LayerSwitcher - Added a new admin setting "Visa teckenförklaring direkt" that forces the legend to be expanded by default in the layer details view, so users don't have to click the legend button. [#1838](https://github.com/hajkmap/Hajk/issues/1838)
+- Client + Admin: DocumentHandler - Added a "Direct Print" setting that prints the currently active document directly without showing the document selection dialog [#1773](https://github.com/hajkmap/Hajk/issues/1773)
+- Client: Infoclick - Functionality to hide links that point to non-existing resources [#1804](https://github.com/hajkmap/Hajk/issues/1804)
+- Client: LayerComparer - Added the long-awaited spy glass mode [#1808](https://github.com/hajkmap/Hajk/issues/1808)
+- Client: LayerComparer - The Spy can now be resized and the transparency can be changed [#1812](https://github.com/hajkmap/Hajk/issues/1812)
+- Client: LayerSwitcher - A group can now be set to be `exclusive`, meaning that its layers will be rendered as radio buttons and just one layer will be allowed to be visible at a given time. [#1848](https://github.com/hajkmap/Hajk/pull/1848)
+- Admin: You can now configure CQL filters for WMS layers directly in the admin interface [#1818](https://github.com/hajkmap/Hajk/issues/1818)
+- Client: Better WMTS Support [#1795](https://github.com/hajkmap/Hajk/issues/1795)
+- Client: LayerSwitcher - it is possible to add an additional style to WMS layers that contains feature labels. A button in the LayerSwitcher allows user to control labels' visibility for such a layer. [#1816](https://github.com/hajkmap/Hajk/issues/1816)
+- Client + Admin: DocumentHandler — Added support for embedding external content via iframes, such as Microsoft Power BI reports, directly in documents.
+- Client: PropertyChecker - There's now a new option, `showToggleAllCheckLayers` that can add a toggle all button to the check layer results view, part of [#1760](https://github.com/hajkmap/Hajk/issues/1760).
+- Client: PropertyChecker - Added a `q_pc` URL parameter that programmatically triggers a property check from a property name or address. It reuses an existing WFS search source (configured via `propertyNameLookupWfsLayerId` and the optional `addressLookupWfsLayerId`) to resolve the value to a geometry, pans the map there, and is written back to the URL hash on map click so results are shareable. Closes [#1827](https://github.com/hajkmap/Hajk/issues/1827).
+
 ### Changed
+
+- Backend: Upgraded `write-excel-file` from 3.x to 4.x.
+- Backend: Enhance detailed request logger with structured output and file logging configuration [#1836](https://github.com/hajkmap/Hajk/pull/1836)
+- Backend: Bumped the [API Explorer](https://github.com/swagger-api/swagger-ui) to v5.32.6.
+- Client: AppModel refactored — split the 1444-line class into 8 focused modules under `appModel/` (urlParamsMerger, configTranslator, backgroundLayers, clickBindings, mapFactory, layerLoader, layerVisibility, pluginManager). No behavior change; all public methods preserved. [#1826](https://github.com/hajkmap/Hajk/pull/1826)
+- Client: New Mobile UI etc, see [#1778](https://github.com/hajkmap/Hajk/issues/1778).
+- Client: New CQL filter UI, PR [#1756](https://github.com/hajkmap/Hajk/pull/1756).
+- Client: TypeScript is now supported, see [#1824.](https://github.com/hajkmap/Hajk/pull/1824)
+- Client: Upgraded MUI packages to v9. Completed the migration steps not covered by the codemods — Autocomplete `renderInput` now reads `params.slotProps` (fixes a startup crash in the search bar), `PopperComponent`/`PaperComponent` moved to `slots`, Dialog `PaperComponent`/`PaperProps`/`BackdropProps`/`onBackdropClick` and Tooltip `TransitionProps` moved to `slots`/`slotProps`, remaining `InputProps` on TextField moved to `slotProps.input`, `SpeedDialAction` tooltip props moved to `slotProps.tooltip`, and CSS props inside `ListItemText` Typography slots moved into `sx` (silences DOM prop warnings and restores layer-name truncation).
+
+### Fixed
+
+- Client: DocumentHandler - Fixed maplink and link not being triggered when opening a document via search results. [#1833](https://github.com/hajkmap/Hajk/issues/1833)
+- Backend: Prevent path traversal in v2 map config loading by validating map names before reading files (`js/path-injection`, [code scanning alert #53](https://github.com/hajkmap/Hajk/security/code-scanning/53)).
+- Client: LayerSwitcher - Fixed vertical alignment of list items when using icons in the layer details view. [#1838](https://github.com/hajkmap/Hajk/issues/1838)
+- Client: LayerSwitcher - Removed redundant (i) icon next to the "Info" label in the layer details view. [#1838](https://github.com/hajkmap/Hajk/issues/1838)
+- Client: LayerSwitcher - The "Inställningar" heading is no longer shown when there are no settings available for a layer. [#1838](https://github.com/hajkmap/Hajk/issues/1838)
+- Client: DocumentHandler - Fixed subscription accumulation in Contents.jsx that caused duplicate print headers [#1773](https://github.com/hajkmap/Hajk/issues/1773)
+- Client: Ensure the Quick Access function respects the cookie setting [Issue #1798](https://github.com/hajkmap/Hajk/issues/1798)
+- Backend: Removed/replaced two unnecessary dependencies, see [commit](https://github.com/hajkmap/Hajk/commit/138e8668326b19a643542330ffef2ec5e3d847a6).
+- Client: Display the filename of imported draw objects along with the time, see issue [#1782](https://github.com/hajkmap/Hajk/issues/1782).
+- Client: DocumentHandler - Mobile UI - Removed double padding and forced images to fit width instead of breaking the layout. [commit](https://github.com/hajkmap/Hajk/commit/458437ad98184d2ef049a3915c83ac75d8675fff)
+- Client: DocumentHandler - Mobile UI etc - Stop cutting text in accordion and keep expansion stable. [commit](https://github.com/hajkmap/Hajk/commit/7af45edb2b692853dfc71bff1c617aef01786d1a)
+- Client: Mobile UI - Reset the WindowSheet's scroll position when its content changes (opening the sheet, switching documents in DocumentHandler, navigating between feature collections/features in Infoclick) so new content always starts at the top. [commit](https://github.com/hajkmap/Hajk/commit/d6073ce901d117efd296a53f17654ab6e3b849d5)
+- Admin: Fixed a long-standing bug where the algorithm used to determine if a layer is used in a map was faulty. Also, added a slight hover effect to some buttons. [commit](https://github.com/hajkmap/Hajk/commit/b0bcc56369d749e731d05344f92d7d8808bedf27)
+- Backend: Removed unused dependencies (clf-date, ws, query-string and @babel/runtime).
+- Client: LayerSwitcher - Fix an issue where loading a saved favorite in some cases caused the layer to show a warning icon ([commit](https://github.com/hajkmap/Hajk/commit/11142352f0a4130c0292a7298dc6f73f0cda3c99)).
+- Client: LayerSwitcher - Fix an issue where loading saved favorites and presets did not hide previously visible group layers ([commit](https://github.com/hajkmap/Hajk/commit/bc49dc4fa73c820546b90f97870a17d0a6cb1a00)).
+
+## [4.3.0] 2026-04-20
+
+### Changed
+
+- The Node build script is not officially obsolete, but kept in the repo for reference, [commit](https://github.com/hajkmap/Hajk/commit/8fbc7f4c27298ac1c8e69450a183f4614d3dafcd).
+- Add referrer meta tag (strict-origin-when-cross-origin), [#1799](https://github.com/hajkmap/Hajk/pull/1799).
+
+### Fixed
+
+- Solved a bug where plugin buttons could disappear in certain configurations, [#1788](https://github.com/hajkmap/hajk/issues/1788).
+- Breadcrumbs (a LayerSwitcher option) are now back, [#1785](https://github.com/hajkmap/hajk/issues/1785).
+- Multiple regressions introduced in the Print plugin during [#1757](https://github.com/hajkmap/Hajk/issues/1757) have been fixed in [#1786](https://github.com/hajkmap/Hajk/issues/1786).
+- Draw order is now always shown when enabled by admin, [#1792](https://github.com/hajkmap/hajk/issues/1792).
+- Allow visibility toggling for layers coming from imported files, [#1797](https://github.com/hajkmap/Hajk/pull/1797).
+- Added optional property chain to rule out possible runtime crash with certain misconfigured layers, [commit](https://github.com/hajkmap/Hajk/commit/3a0c6cd5294c1f1faca5ff9ff5c7caad2307222e).
+- DocumentHandler: Ensure that all menu entries that have documents connected to them show up in the print window too, [commit](https://github.com/hajkmap/Hajk/commit/63878937eadfa5da992aa4bc4992dca15aa2d47f).
+- Print: Ensure libPDF respects the colors selected in the ColorPicker. Closes [#1801](https://github.com/hajkmap/Hajk/pull/1801).
+
+### Security
+
+- The official Docker image now uses Node 24 and the "slim" image variant, with less vulnerabilities, [commit](https://github.com/hajkmap/Hajk/commit/adb8036d2833feb62a1095d257a49bad7ff217a5).
+- Updated Hajk's dependencies, bringing down the CVE count to zero, [commit](https://github.com/hajkmap/Hajk/commit/9676ce69299c8eb34dcdc74d148e15c9de5f2e75).
+
+## [4.3.0-rc.1] 2026-03-16
+
+### Breaking
+
+- Client: As part of migration the to Vite (see below and [PR #1754](https://github.com/hajkmap/Hajk/pull/1754)), support for some legacy browsers, including iOS <=12, has been removed. See [commit](https://github.com/hajkmap/Hajk/commit/3fc95ba9b565503af499909eb2cdb521e061c706) for more details.
+- Client: Another implication of the Vite migration is that `buildConfig.json` is no longer used. Instead, we rely on Vite's dynamic chuck loading to decide which "plugins" (i.e. Hajk tools) are loaded. This is now done in runtime and administrators can change this behavior by editing the `availableTools` array in `appConfig.json`. If the array is missing or empty, we fall back to load all tools. Please note that whatever is visible to the end user has not changed: it is still up to the map configuration to decide which tools really are shown in a specific map.
+
+### Added
+
+- Backend: Added support for `X-Forwarded-*` headers and `X-Qgis-Service-Url` header in proxy middleware (the one activated by the use of `PROXY_*` variables in `.env`). See issue [issue #1774](https://github.com/hajkmap/Hajk/issues/1774) for more info.
+
+### Changed
+
+- Client: Migrated from Create React App to Vite. See [issue #1253](https://github.com/hajkmap/Hajk/issues/1253) and [PR #1754](https://github.com/hajkmap/Hajk/pull/1754) for more details.
+- Client/Print: Print tool's components changed. We managed to replace two large, rather old, dependencies with one modern PDF library + native rendering of the PNG files, see issue [#1757](https://github.com/hajkmap/Hajk/issues/1757).
+- Backend: Refactored and consolidated logging. All log messages are now automatically decorated with username (if AD lookup is active, else "-"). As a result of this, the default log level for most messages has changed from `TRACE` to `DEBUG`. If you see too much info in the production log, ensure not to use `TRACE` there (which isn't a good idea for production anyway, except for hunting down runtime issues). See [issue #1764](https://github.com/hajkmap/Hajk/issues/1764) and [PR #1765](https://github.com/hajkmap/Hajk/pull/1765) for more details.
+- Client: LayerSwitcher's search box now has the same styling as the app's regular search box. See issue [#1645](https://github.com/hajkmap/Hajk/issues/1645) and PR [#1768](https://github.com/hajkmap/Hajk/pull/1768).
+- Backend: The proxy mechanism now properly sets X-Forwarded headers, see ([commit](https://github.com/hajkmap/Hajk/commit/c38339b5a0675911d2625c4b29b107c9ea802ac4)).
+
+### Fixed
+
+- Font size and weight for Print's text output can now be correctly set in Admin, see issue [#1752](https://github.com/hajkmap/Hajk/issues/1752).
+- Backend: Attempt to load the process with a missing or empty `.env` results in an error being thrown early. See [commit](https://github.com/hajkmap/Hajk/commit/6e0d39a1c1347a8c75a626b6f219b09117ac5d5b).
+- DocumentHandler/Print: Fix styling to correctly position images that use float positioning ([commit](https://github.com/hajkmap/Hajk/commit/f0a44d0249110d4b4965c15c2c5c09878775d41c)).
+- DocumentHandler/Print: Include blockquote background colors ([commit](https://github.com/hajkmap/Hajk/commit/bbd726d3be8062a3173773f72fb86b7420ea2fd5)).
+- LayerSwitcher: Expand Quick Access automatically when loading theme presets ([commit](https://github.com/hajkmap/Hajk/commit/29405a36bb54eedf98ec9c72119c771e5e984784)).
+- LayerSwitcher: Save loaded favorites to `localStorage` ([commit](https://github.com/hajkmap/Hajk/commit/b4741f25f9ca6bd633276ce16707fac22335e993)).
+
+## [4.2.0] - 2026-01-23
+
+### Fixed
+
+- Added more info about the OpenStreetMap background, hidden CQL filters for background layers. [commit](https://github.com/hajkmap/Hajk/commit/b4824ef9f22ac60aa85aa70cfbf2cd2e816d748d)
+- Integrated sphere-based calculations for area and length in DrawModel using `getArea` and `getLength` from `ol/sphere`. [issue](https://github.com/hajkmap/Hajk/issues/1750)
+
+## [4.2.0-rc.1] - 2025-11-26
+
+### Added
+
+- It's now possible to use Matomo tracking without cookies. [PR#1691](https://github.com/hajkmap/Hajk/pull/1691)
+- OpenStreetMap can optionally be selected as default background layer in map config. See commits [here](https://github.com/hajkmap/Hajk/commit/e1b5f59c69b8985a498efee27aa76ea11ca4afbb) and [here](https://github.com/hajkmap/Hajk/commit/4040c7c11367620040efc7609a56e1b3b436cc67). In addition, the Admin UI option has been added in [this commit](https://github.com/hajkmap/Hajk/commit/06c52b0cd863022f7c9a58e5103168627ac41172).
+- Changed Hajk's default projection (in `simpleMapConfig.json` and `map_1.json`) to EPSG:3857. This makes our new default OSM background look way better. [commit](https://github.com/hajkmap/Hajk/commit/6f5a5dc89a5c18d49f5af2d26353036d35945b82)
+
+### Changed
+
+- Select Tool in FmeServer plugin can now select/deselect several features. [PR#1708](https://github.com/hajkmap/Hajk/pull/1708)
+- MUI upgraded to v7. [PR#1658](https://github.com/hajkmap/Hajk/pull/1658)
+- The OpenStreetMap background (as well as the white and black backgrounds) are now first-class citizens in LayerSwitcher, enabling e.g. loading the app with these layers visible. [PR#1680](https://github.com/hajkmap/Hajk/pull/1680)
+- The legacy `react-smooth-dnd` have been replaced with `dnd-kit`, [PR#1689](https://github.com/hajkmap/Hajk/pull/1689)
+- The introduction module has been updated to support Hajk 4. Two tour modes have been implemented (full tour and new layerswitcher tour). [PR#1664](https://github.com/hajkmap/Hajk/pull/1664)
+- The Anchor tool is now a dialog component. [PR#1711](https://github.com/hajkmap/Hajk/pull/1711)
+- QuickAccess: LayerGroups are now shown as breadcrumbs, with each group’s layers displayed beneath it. [PR#1726](https://github.com/hajkmap/Hajk/pull/1726)
 
 ### Deprecated
 
@@ -19,7 +141,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-### Security -->
+- Bookmarks: Fixed button state. [PR#1609](https://github.com/hajkmap/Hajk/pull/1609)
+- WFS layers: Fixed how different ways of writing the WFS service URL were affecting Client's ability to load layers from that service. [PR#1677](https://github.com/hajkmap/Hajk/pull/1677)
+- DialogWindowPlugin-based tools: Fixed disappearing toolbar button when toolbar state was toggled. [issue](https://github.com/hajkmap/Hajk/issues/1687)
+- LayerSwitcher: Don't show multiple legend graphics for a layer group if Admin specified one legend image. [issue](https://github.com/hajkmap/Hajk/issues/1644)
+- LayerSwitcher: Don't render Quick Access Presets if the functionality has been disabled in Admin. [PR](https://github.com/hajkmap/Hajk/pull/1693)
+- LayerSwitcher: Info for groups now shows the same button as info for regular layers and group layers. This solution is compatible with existing configurations. [PR](https://github.com/hajkmap/Hajk/pull/1699)
+- Infoclick: Fix bug where true/false values could be switched if certain conditions in the underlying database were met. [issue](https://github.com/hajkmap/Hajk/issues/1698)
+- Client: Show an Access Denied message if Backend returns 403. Closes [issue](https://github.com/hajkmap/Hajk/issues/1705)
+- LayerSwitcher: It is now possible to search on a LayerGroup name. GroupLayer search now supports expanding and showing sublayers, which was not possible before. Closes [issue](https://github.com/hajkmap/Hajk/issues/1722)
+- The add button in Bookmark is now only enabled when user has entered text in input. [PR#1657](https://github.com/hajkmap/Hajk/pull/1657)
+- QuickAccess: Sublayers inside a GroupLayer are now toggled correctly when using the “Ladda” button in QuickAccess. [PR#1726](https://github.com/hajkmap/Hajk/pull/1726)
+
+### Security
+
+- Upgraded dependencies in Client and Backend. [commit](https://github.com/hajkmap/Hajk/commit/2bee79696a66413749fb70c32b5c0b1cb7d4835f) and [commit](https://github.com/hajkmap/Hajk/commit/6f8f1741cfba6cb7eb57bf65943a8af192af7bc2)
+
+## [4.1.0] - 2025-06-18
+
+### Fixed
+
+- LayerComparer: Corrected layer comparison logic in onClose handler. [commit](https://github.com/hajkmap/Hajk/commit/7f85c143055f1648a3033588a9462a902af4dea5)
+- The `reinstall_modules.sh` script has been fixed to resolve install problems due to outdated peer dependency in one of our dependencies. [commit](https://github.com/hajkmap/Hajk/commit/ef4940b566f39b20190fe03726dc4a6ef33aa9db)
+
+## [4.1.0-rc.1] - 2025-04-25
+
+### Added
+
+- Sketch: Added GPX import and export. [PR#1641](https://github.com/hajkmap/Hajk/pull/1641)
+- Sketch/Measurer: Disable snapping temporarily on keyDown (Space) ([issue](https://github.com/hajkmap/Hajk/issues/1616))
+- DocumentHandler: Now possible to add map-link that opens corresponding plugin (with/without enableAppStatInHash) ([issue](https://github.com/hajkmap/Hajk/issues/1613))
+
+### Removed
+
+- Backend: Packages related to testing were never really used. [commit](https://github.com/hajkmap/Hajk/commit/934ba9780d2e57e60cde19f8341db49bcc6103e7) and [commit](https://github.com/hajkmap/Hajk/commit/8029c0b45dd38107acca3a47607f48d504dfd716)
+
+### Fixed
+
+- LayerSwitcher: UX Improvements ([issue](https://github.com/hajkmap/Hajk/issues/1637))
+- LayerSwitcher: Now possible to render special layers at the bottom [PR#1648](https://github.com/hajkmap/Hajk/pull/1648)
+- Core: Fixed a bug where the application would crash and leave user with a blank screen in the unlikely condition of a vector layer being configured in such a way that the URL for fetching SLD for styling that layer would become unavailable. [commit](https://github.com/hajkmap/Hajk/commit/af17bc7e8e0af618d306b6c3ce4dfad660531e0a)
+
+### Security
+
+- Backend: Major upgrades of dependencies, e.g. the latest Express, HTTP Proxy Middleware, ESlint. [commit](https://github.com/hajkmap/Hajk/commit/64877fb4ed70d4a8829babc8ea126da4aee8d062)
 
 ## [4.0.0] - 2025-04-04
 
@@ -415,7 +580,13 @@ _A quick follow-up to 3.13.22, that had some issues with certain map configurati
 
 ## [3.12.0-rc.2] - 2023-06-19
 
-[unreleased]: https://github.com/hajkmap/Hajk/compare/v4.0.0...develop
+[unreleased]: https://github.com/hajkmap/Hajk/compare/v4.3.0...develop
+[4.3.0]: https://github.com/hajkmap/Hajk/compare/v4.3.0-rc1...v4.3.0
+[4.3.0-rc.1]: https://github.com/hajkmap/Hajk/compare/v4.2.0...v4.3.0-rc1
+[4.2.0]: https://github.com/hajkmap/Hajk/compare/v4.2.0-rc.1...v4.2.0
+[4.2.0-rc.1]: https://github.com/hajkmap/Hajk/compare/v4.1.0...v4.2.0-rc.1
+[4.1.0]: https://github.com/hajkmap/Hajk/compare/v4.1.0-rc.1...v4.1.0
+[4.1.0-rc.1]: https://github.com/hajkmap/Hajk/compare/v4.0.0...v4.1.0-rc.1
 [4.0.0]: https://github.com/hajkmap/Hajk/compare/v4.0.0-rc.2...v4.0.0
 [4.0.0-rc.2]: https://github.com/hajkmap/Hajk/compare/v4.0.0-rc.1...v4.0.0-rc.2
 [4.0.0-rc.1]: https://github.com/hajkmap/Hajk/compare/v3.14.1...v4.0.0-rc.1

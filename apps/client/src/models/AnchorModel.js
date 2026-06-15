@@ -1,15 +1,17 @@
-import { PLUGINS_TO_IGNORE_IN_HASH_APP_STATE } from "constants";
+import { PLUGINS_TO_IGNORE_IN_HASH_APP_STATE } from "../constants";
 import { isValidLayerId } from "../utils/Validator";
 import { debounce } from "../utils/debounce";
 
 class AnchorModel {
   #app;
   #cqlFilters;
+  #currentQPc;
   #map;
 
   constructor(settings) {
     this.#app = settings.app;
     this.#cqlFilters = {};
+    this.#currentQPc = null;
     this.#map = settings.map;
 
     this.#app.globalObserver.subscribe("core.appLoaded", () => {
@@ -33,7 +35,19 @@ class AnchorModel {
       }
     );
 
-    // C: A plugin based on BaseWindowPlugin changes visibility
+    // C: PropertyChecker resolves a property (map click or q_pc param)
+    this.#app.globalObserver.subscribe(
+      "propertychecker.propertySelected",
+      async ({ propertyName }) => {
+        this.#currentQPc = propertyName ?? null;
+        this.#app.globalObserver.publish("core.mapUpdated", {
+          url: await this.getAnchor(),
+          source: "propertyChecker",
+        });
+      }
+    );
+
+    // D: A plugin based on BaseWindowPlugin changes visibility
     this.#app.globalObserver.subscribe(
       "core.pluginVisibilityChanged",
       async () => {
@@ -44,7 +58,7 @@ class AnchorModel {
       }
     );
 
-    // D: A layer's visibility changes
+    // E: A layer's visibility changes
     this.#map
       .getLayers()
       .getArray()
@@ -52,11 +66,30 @@ class AnchorModel {
         // Grab an unique ID for each layer, we'll need this to save CQL filter value for each layer
         const layerId = layer.get("name");
 
+        // Initialize CQL filter for visible layers that already have one
+        this.#initializeCqlFilterForLayer(layer, layerId);
+
         // Update anchor each time layer visibility changes (to reflect current visible layers)
         layer.on("change:visible", async (event) => {
+          // Clean up CQL filter from URL when layer becomes invisible
+          if (!event.target.getVisible()) {
+            delete this.#cqlFilters[layerId];
+          } else {
+            // Initialize CQL filter when layer becomes visible
+            this.#initializeCqlFilterForLayer(event.target, layerId);
+          }
+
           this.#app.globalObserver.publish("core.mapUpdated", {
             url: await this.getAnchor(),
             source: "layerVisibility",
+          });
+        });
+
+        // F: Update anchor when label layer state changes
+        layer.on("change:useLabelStyle", async (_event) => {
+          this.#app.globalObserver.publish("core.mapUpdated", {
+            url: await this.getAnchor(),
+            source: "labelLayerToggle",
           });
         });
 
@@ -64,13 +97,17 @@ class AnchorModel {
         layer.getSource().on("change", async ({ target }) => {
           if (typeof target.getParams !== "function") return;
 
-          // Update CQL filters only if a real value exists
+          // Update CQL filters only if a real value exists and layer is visible
           const cqlFilterForCurrentLayer = target.getParams()?.CQL_FILTER;
           if (
             cqlFilterForCurrentLayer !== null &&
-            cqlFilterForCurrentLayer !== undefined
+            cqlFilterForCurrentLayer !== undefined &&
+            layer.getVisible()
           ) {
             this.#cqlFilters[layerId] = cqlFilterForCurrentLayer;
+          } else if (!layer.getVisible()) {
+            // Remove CQL filter if layer is not visible
+            delete this.#cqlFilters[layerId];
           }
 
           // Publish the event
@@ -80,6 +117,19 @@ class AnchorModel {
           });
         });
       });
+  }
+
+  #initializeCqlFilterForLayer(layer, layerId) {
+    // Only initialize CQL filter for visible layers
+    if (!layer.getVisible()) return;
+
+    const source = layer.getSource();
+    if (typeof source?.getParams === "function") {
+      const cqlFilter = source.getParams()?.CQL_FILTER;
+      if (cqlFilter !== null && cqlFilter !== undefined && cqlFilter !== "") {
+        this.#cqlFilters[layerId] = cqlFilter;
+      }
+    }
   }
 
   #getAnchorWhenAnimationFinishes = async (e) => {
@@ -99,13 +149,21 @@ class AnchorModel {
       .getArray()
       .filter((layer) => {
         return (
-          // We consider a layer to be visible only if…
-          layer.getVisible() && // …it's visible…
-          layer.getProperties().name &&
-          isValidLayerId(layer.getProperties().name) // …has a specified name property…
+          layer.getVisible() === true &&
+          ["group", "layer", "base"].includes(layer.get("layerType"))
         );
       })
-      .map((layer) => layer.getProperties().name)
+      .map((layer) => {
+        const layerId = layer.get("name");
+        // Check if the layer should show labels
+        const useLabelStyle = layer.get("useLabelStyle");
+        const hasLabelStyle = layer.get("hasLabelStyle");
+
+        if (useLabelStyle && hasLabelStyle) {
+          return `${layerId}_l`;
+        }
+        return layerId;
+      })
       .join(",");
   }
 
@@ -117,13 +175,14 @@ class AnchorModel {
       .filter((layer) => {
         return (
           // We consider a layer to be visible only if…
-          layer.getVisible() && // …it's visible…
-          layer.getProperties().name &&
-          isValidLayerId(layer.getProperties().name) && // …has a specified name property…
-          layer.getProperties().layerType === "group" && // …and it is a group layer.
+          // …and it is a group layer.
           // Now, find out how many sublayers there are in this group layer and
           // compare it with the amount of sublayer that are active right now.
           // Include this group layers _only_ if a subset of sublayers is selected.
+          layer.getVisible() && // …it's visible…
+          layer.getProperties().name &&
+          isValidLayerId(layer.getProperties().name) && // …has a specified name property…
+          layer.getProperties().layerType === "group" &&
           layer.subLayers?.length !==
             layer.getSource().getParams?.().LAYERS?.split(",").length
         );
@@ -190,6 +249,9 @@ class AnchorModel {
 
     // Only add 'q' if it isn't empty
     q.length > 0 && url.searchParams.append("q", q);
+
+    // Only add 'q_pc' if PropertyChecker has an active property
+    this.#currentQPc && url.searchParams.append("q_pc", this.#currentQPc);
 
     // Occasionally we may want to prevent hash update, but it's off by default
     if (

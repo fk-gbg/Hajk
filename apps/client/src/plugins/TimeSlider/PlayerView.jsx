@@ -1,0 +1,168 @@
+import { Button, Grid, Slider } from "@mui/material";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import PauseIcon from "@mui/icons-material/Pause";
+import RotateLeftOutlinedIcon from "@mui/icons-material/RotateLeftOutlined";
+import SettingsButton from "./components/SettingsButton";
+import HajkToolTip from "components/HajkToolTip";
+
+export default function PlayerView(props) {
+  // Handles when the user wants to step one step forwards.
+  // Sets the current time to the current time plus one step size
+  // If we've reached the end, we start from the beginning...
+  const stepOnesForward = () => {
+    let nextUnixTime = props.currentUnixTime + props.stepSize;
+    if (nextUnixTime >= props.endTime) {
+      nextUnixTime = props.startTime;
+    }
+    props.handleSliderChange(nextUnixTime);
+  };
+
+  // Handles when the user wants to step one step backwards.
+  // Sets the current time to the current time minus one step size
+  // If we've reached the start, we "jump" to the end...
+  const stepOnesBackward = () => {
+    let nextUnixTime = props.currentUnixTime - props.stepSize;
+    if (nextUnixTime <= props.startTime) {
+      nextUnixTime = props.endTime;
+    }
+    props.handleSliderChange(nextUnixTime);
+  };
+
+  return props.currentUnixTime ? (
+    <Grid container sx={{ padding: 2 }}>
+      <Grid
+        sx={[
+          props.markResolution === "years"
+            ? {
+                paddingLeft: 2,
+              }
+            : {
+                paddingLeft: props.markResolution === "months" ? 4 : 6,
+              },
+          props.markResolution === "years"
+            ? {
+                paddingRight: 2,
+              }
+            : {
+                paddingRight: props.markResolution === "months" ? 4 : 6,
+              },
+        ]}
+        size={12}
+      >
+        <Slider
+          size="small"
+          value={props.currentUnixTime}
+          min={props.startTime}
+          max={props.endTime}
+          step={props.stepSize}
+          marks={props.marks}
+          onChange={(e, value) => {
+            if (value !== props.currentUnixTime) {
+              props.handleSliderChange(value);
+            }
+          }}
+        />
+      </Grid>
+      <Grid
+        container
+        direction="row"
+        spacing={2}
+        sx={{
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Grid align="center" size={2}>
+          <HajkToolTip title="Återställ tidslinjen">
+            <Button variant="contained" onClick={props.resetTimeSlider}>
+              <RotateLeftOutlinedIcon />
+            </Button>
+          </HajkToolTip>
+        </Grid>
+        <Grid align="center" size={2}>
+          <HajkToolTip
+            title={
+              props.playing
+                ? "Du kan inte hoppa bakåt när spelaren är aktiv."
+                : "Hoppa ett steg bakåt"
+            }
+          >
+            <span>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  stepOnesBackward();
+                }}
+                disabled={props.playing}
+              >
+                <ArrowBackIcon />
+              </Button>
+            </span>
+          </HajkToolTip>
+        </Grid>
+        <Grid align="center" size={2}>
+          <HajkToolTip
+            title={props.playing ? "Stoppa tidslinjen" : "Starta tidslinjen"}
+          >
+            <Button
+              variant="contained"
+              onClick={() => {
+                props.toggleSlider(!props.playing);
+              }}
+            >
+              {props.playing ? <PauseIcon /> : <PlayArrowIcon />}
+            </Button>
+          </HajkToolTip>
+        </Grid>
+        <Grid align="center" size={2}>
+          <HajkToolTip
+            title={
+              props.playing
+                ? "Du kan inte hoppa framåt när spelaren är aktiv."
+                : "Hoppa ett steg framåt"
+            }
+          >
+            <span>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  stepOnesForward();
+                }}
+                disabled={props.playing}
+              >
+                <ArrowForwardIcon />
+              </Button>
+            </span>
+          </HajkToolTip>
+        </Grid>
+        <Grid align="center" size={2}>
+          <SettingsButton
+            layerStatus={props.layerStatus}
+            open={props.settingsDialog}
+            setOpen={props.setSettingsDialog}
+          />
+        </Grid>
+      </Grid>
+    </Grid>
+  ) : (
+    <Grid
+      container
+      sx={{
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+      }}
+    >
+      <Grid>
+        <SettingsButton
+          layerStatus={props.layerStatus}
+          open={props.settingsDialog}
+          setOpen={props.setSettingsDialog}
+        />
+      </Grid>
+    </Grid>
+  );
+}

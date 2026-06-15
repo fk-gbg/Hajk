@@ -2,9 +2,9 @@ import { Vector as VectorLayer } from "ol/layer";
 import { Vector as VectorSource } from "ol/source";
 import { IconMarker } from "./FirIcons";
 import { Style, Icon } from "ol/style";
-import Feature from "ol/Feature.js";
+import Feature from "ol/Feature";
 import HajkTransformer from "../../utils/HajkTransformer";
-import { Point } from "ol/geom.js";
+import { Point } from "ol/geom";
 import FirStyles from "./FirStyles";
 import { hfetch } from "../../utils/FetchWrapper";
 import { GeoJSON } from "ol/format";
@@ -439,7 +439,7 @@ class FirLayerController {
     }
   };
 
-  handleClearSearch = (data) => {
+  handleClearSearch = (_data) => {
     this.clearBeforeSearch();
     this.model.layers.draw.getSource().clear();
     this.model.layers.buffer.getSource().clear();

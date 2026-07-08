@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Client: Print - Fixed map title and subtitle (print comment) so they are always horizontally centered, wrap correctly on long text, and the subtitle is always positioned directly below the title regardless of how many lines the title spans.
+- Backend: Fixed a startup race where the JSON/body parsers (registered asynchronously after the proxy setup) could be mounted _after_ the API routers. When this happened, `req.body` was `undefined` for every request with a body, causing failures such as a cryptic `Cannot read properties of undefined (reading 'id')` 500 when saving a layer (`PUT /settings/wmslayer`). The body parsers are now guaranteed to be registered before the API routers. The settings endpoint also returns a clear error and logs the relevant request headers if a body still fails to parse.
 - Client: DocumentHandler - Fixed maplink and link not being triggered when opening a document via search results. [#1833](https://github.com/hajkmap/Hajk/issues/1833)
 - Backend: Prevent path traversal in v2 map config loading by validating map names before reading files (`js/path-injection`, [code scanning alert #53](https://github.com/hajkmap/Hajk/security/code-scanning/53)).
 - Client: LayerSwitcher - Fixed vertical alignment of list items when using icons in the layer details view. [#1838](https://github.com/hajkmap/Hajk/issues/1838)
@@ -58,6 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend: Removed unused dependencies (clf-date, ws, query-string and @babel/runtime).
 - Client: LayerSwitcher - Fix an issue where loading a saved favorite in some cases caused the layer to show a warning icon ([commit](https://github.com/hajkmap/Hajk/commit/11142352f0a4130c0292a7298dc6f73f0cda3c99)).
 - Client: LayerSwitcher - Fix an issue where loading saved favorites and presets did not hide previously visible group layers ([commit](https://github.com/hajkmap/Hajk/commit/bc49dc4fa73c820546b90f97870a17d0a6cb1a00)).
+- Client: Search - User's limit of search sources (made in search settings) was not respected in Safari. [#1852](https://github.com/hajkmap/Hajk/issues/1852).
+- Client: Crashes when activating Snap-enabled tools (e.g. PropertyChecker) with nested GeometryCollection features in the map. [#1860](https://github.com/hajkmap/Hajk/issues/1860).
+- Client: MapSwitcher can now be configured to show as a larger dropdown element next to the search box (in addition to the traditional Control button). [#1858](https://github.com/hajkmap/Hajk/issues/1858).
 
 ## [4.3.0] 2026-04-20
 
